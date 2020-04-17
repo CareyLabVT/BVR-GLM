@@ -51,6 +51,11 @@ baseflow$Date <- as.POSIXct(strptime(baseflow$Date, "%m/%d/%Y", tz = "EST"))
 # Select data from BVR
 bvr_baseflow <- baseflow %>% filter(Reservoir == "BVR")
 
+# Compare distrbutions of inflow at 100 vs. 200
+ggplot(bvr_baseflow,aes(x=factor(Site),y=Flow_cms,color=factor(Site)))+
+  geom_boxplot()+
+  theme_classic(base_size=15)
+
 # Plot 100 vs. 200
 ggplot(bvr_baseflow,mapping=aes(x=Date,y=Flow_cms,color=factor(Site)))+
   geom_line()+
@@ -59,8 +64,12 @@ ggplot(bvr_baseflow,mapping=aes(x=Date,y=Flow_cms,color=factor(Site)))+
 
 # Create a normal distribution for resampling based on all inflow data
 flow <- bvr_baseflow %>% select(Flow_cms)
-
+mean(flow$Flow_cms)
+sd(flow$Flow_cms)
 hist(flow$Flow_cms)
+
+### Use average and sd to generate a resampling from a random normal distribution
+test <- rnorm(2191, mean=mean(flow$Flow_cms), sd=sd(flow$Flow_cms))
 
 # Random dates
 dates <- as.data.frame(sample(seq(as.Date('2013-01-01'), as.Date('2018-12-31'), by="day"), 313))
