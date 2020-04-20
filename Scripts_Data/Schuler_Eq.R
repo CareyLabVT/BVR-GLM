@@ -2,6 +2,7 @@
 ### to calculate daily run-off volume for BVR
 ## A Hounshell, 27 Mar 2020
 ## NOTE: Assuming precipitation is reported in mm
+## Saved Rfile as: Est_Inflow
 
 # Load packages
 pacman::p_load(tidyverse,ggplot2,zoo)
@@ -24,7 +25,7 @@ precip$time <- as.Date(precip$time)
 precip <- precip %>% group_by(time) %>% summarize_all(funs(sum)) %>% arrange(time)
 
 # Use Schuler Equation to calculate daily run-off volume to BVR
-# R = P * Pj * Rv where P = precipitation (mm), Pj = 0.9 (fraction of annual rainfall events that produce run-off), Rv = Runoff
+# R = P * Pj * Rv where P = precipitation (mm/d), Pj = 0.9 (fraction of annual rainfall events that produce run-off), Rv = Runoff
 # Coefficient (assuming no imprevious surface in BVR; Rv = 0.05)
 # Converted to m/d (from mm/d) -> then multiply by total watershed surface area for BVR
 precip <- precip %>% mutate(r = (Rain * 0.9 * 0.05)/1000)
@@ -69,7 +70,43 @@ sd(flow$Flow_cms)
 hist(flow$Flow_cms)
 
 ### Use average and sd to generate a resampling from a random normal distribution
-test <- rnorm(2191, mean=mean(flow$Flow_cms), sd=sd(flow$Flow_cms))
+q_100 <- as.data.frame(rnorm(2191, mean=mean(flow$Flow_cms), sd=sd(flow$Flow_cms)))
+names(q_100)[1] <- "q_100_m3s"
+
+q_100 <- q_100 %>% mutate(q_100_m3s = replace(q_100_m3s, which(q_100_m3s < 0), 0))
+hist(q_100$q_100_m3s)
+
+q_200 <- as.data.frame(rnorm(2191, mean=mean(flow$Flow_cms), sd=sd(flow$Flow_cms)))
+names(q_200)[1] <- "q_200_m3s"
+
+q_200 <- q_200 %>% mutate(q_200_m3s = replace(q_200_m3s, which(q_200_m3s < 0), 0))
+hist(q_200$q_200_m3s)
+
+discharge <- cbind.data.frame(precip,q_100)
+discharge <- cbind.data.frame(discharge,q_200)
+
+discharge <- discharge %>% mutate(q100_total = Inflow100_m3 + q_100_m3s)
+discharge <- discharge %>% mutate(q200_total = Inflow200_m3 + q_200_m3s)
+discharge <- discharge %>% mutate(q_total = Reservoir_m3 + q100_total + q200_total)
+
+# Plot
+ggplot()+
+  geom_line(discharge,mapping=aes(x=time,y=q100_total,color="100"))+
+  geom_line(discharge,mapping=aes(x=time,y=q200_total,color="200"))+
+  geom_line(discharge,mapping=aes(x=time,y=Reservoir_m3,color="Reservoir"))+
+  geom_line(discharge,mapping=aes(x=time,y=q_total,color="Total"))+
+  theme_classic(base_size=15)
+
+# Export out calculated discharge
+q_out <- discharge %>% select(time,Reservoir_m3,q100_total,q200_total,q_total)
+names(q_out)[2] <- "res_cms"
+names(q_out)[3] <- "q100_total_cms"
+names(q_out)[4] <- "q200_total_cms"
+names(q_out)[5] <- "q_total_cms"
+
+write_csv(q_out, path = "C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/q_calc.csv")
+
+### Old code using same distribution as the collected data
 
 # Random dates
 dates <- as.data.frame(sample(seq(as.Date('2013-01-01'), as.Date('2018-12-31'), by="day"), 313))
