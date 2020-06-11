@@ -5,7 +5,7 @@
 ### A Hounshell, 21 Apr 20
 
 # Load packages
-pacman::p_load(tidyverse,ggplot2,zoo)
+pacman::p_load(tidyverse,ggplot2,zoo,xts)
 
 # Load Q from soil moisture method (m3/d) (aka: 'stormflow')
 storm <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/SoilMoisture_BVR_flow_calcs.csv")
@@ -121,6 +121,20 @@ ggplot()+
   xlim(as.POSIXct("2019-04-01"),as.POSIXct("2019-10-31"))+
   ylim(0,0.06)+
   theme_classic(base_size=15)
+
+## Merge calculate baseflow + stormflow (100, 200) with measured discharge and
+## calculate percent difference
+flow_cms_100 <- flow_cms %>% select(time,inflow_100)
+names(flow_cms_100)[1] <- "Date"
+bvr_100 <- merge(bvr_100,flow_cms_100,by="Date")
+bvr_100 <- bvr_100 %>% select(Date, Reservoir,Site,Flow_cms,inflow_100)
+write_csv(bvr_100,path="C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/BVR_100_Comps.csv")
+
+flow_cms_200 <- flow_cms %>% select(time,inflow_200)
+names(flow_cms_200)[1] <- "Date"
+bvr_200 <- merge(bvr_200,flow_cms_200,by="Date")
+bvr_200 <- bvr_200 %>% select(Date,Reservoir,Site,Flow_cms,inflow_200)
+write_csv(bvr_200,path="C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/BVR_200_Comps.csv")
 
 ### Calculate WRT using total inflow and BVR water level data
 vol <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
