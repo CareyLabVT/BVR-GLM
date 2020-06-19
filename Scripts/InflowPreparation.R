@@ -14,7 +14,7 @@ library(tidyverse)
 library(lubridate)
 
 # First, read in inflow file generated from Thronthwaite Overland flow model + groundwater recharge
-# From HWP: for entire watershed (?); units in m3/s
+# From HW: for entire watershed (?); units in m3/s
 inflow <- read_csv("BVR_flow_calcs.csv") %>% 
   dplyr::select(time,Q_cmps) %>% 
   rename(time=time,FLOW=Q_cmps) %>% 
