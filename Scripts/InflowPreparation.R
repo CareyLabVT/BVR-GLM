@@ -130,51 +130,18 @@ median(silica$DRSI_mgL) #this median concentration is going to be used to set as
 
 alldata<-merge(inflow, bvr_nuts, by="time", all.x=TRUE)
 
-#################### NOTE: NO GHG DATA FOR BVR AS OF 18 JUN 2020 - WILL ADD LATER ######################
-### Need to compare BVR inflow data to FCR inflow data - can we use FCR as an approximation?
-
 #read in lab dataset of CH4 from 2015-2019
-ghg_100 <- read.csv("BVR_GHG_Inflow_20200619.csv", header=T) %>%
+# for BVR: Only have a handful of days w/ CH4 in inflows (BVR 100 and 200); aggregate all time points
+# and average CH4 - use average as CH4 input for the entier year
+ghg <- read.csv("BVR_GHG_Inflow_20200619.csv", header=T) %>%
   dplyr::filter(Reservoir == "BVR") %>%
-  dplyr::filter(Depth_m == 100) %>% #weir inflow
+  dplyr::filter(Depth_m == 100|Depth_m == 200) %>% #weir inflow
   select(DateTime, ch4_umolL) %>%
   mutate(DateTime = as.POSIXct(strptime(DateTime, "%d-%b-%y", tz="EST"))) %>%
-  rename(time = DateTime, CAR_ch4 = ch4_umolL) %>%
-  group_by(time) %>%
-  summarise(CAR_ch4 = mean(CAR_ch4)) %>%
-  dplyr::filter(CAR_ch4<0.2)
-plot(ghg$time, ghg$CAR_ch4)
+  rename(time = DateTime, CAR_ch4 = ch4_umolL)
 
-datelist2<-seq.Date(as.Date(first(ghg$time)),as.Date(last(ghg$time)), "days")
-datelist2<-as.data.frame(datelist2)
-colnames(datelist2)=c("time")
-datelist2$time<-as.POSIXct(strptime(datelist2$time, "%Y-%m-%d", tz="EST"))
-
-ghg1 <- merge(datelist2, ghg, by="time", all.x=TRUE) 
-ghg1$CAR_ch4 <- na.fill(na.approx(ghg1$CAR_ch4), "extend")
-plot(ghg1$time, ghg1$CAR_ch4) #decent coverage 2015-2019, but need to develop 2013-2014 data that keeps temporal pattern of data
-#so, need to average value among years per day of year
-
-missingdata <- ghg1 %>% 
-  mutate(DOY = yday(time)) %>%
-  group_by(DOY) %>%
-  summarise(CAR_ch4=mean(CAR_ch4))
-plot(missingdata$DOY, missingdata$CAR_ch4)
-#gives us DOY concentrations averaged across 2015-2019
-#now, need to apply this averaged DOY concentration to 2013-2014 missing dates
-
-ghg2 <- merge(datelist, ghg1, by="time", all.x=TRUE) %>% 
-  mutate(DOY = yday(time))
-
-for(i in 1:length(ghg2$time)){
-  if(is.na(ghg2$CAR_ch4[i])){
-    ghg2$CAR_ch4[i] = missingdata$CAR_ch4[which(missingdata$DOY==ghg2$DOY[i])]
-  }
-}  
-plot(ghg2$time, ghg2$CAR_ch4)
-#check to make sure it all works: each day's CH4 concentration during
-#2013-early 2015 is the mean daily data for 2015-2019
-
+# Calculate average for the BVR data points and mutate column to alldata
+alldata <- alldata %>% mutate(CAR_ch4 = mean(ghg$CAR_ch4))
 
 #some other cool long-term plots
 plot(alldata$time, alldata$SRP_ugL)
@@ -184,8 +151,6 @@ plot(alldata$time, alldata$NH4_ugL)
 plot(alldata$time, alldata$TN_ugL)
 plot(alldata$time, alldata$TP_ugL)
 plot(alldata$time, alldata$DIC_mgL)
-
-alldata<-merge(alldata, ghg2, by="time", all.x=TRUE)
 
 ############################# END GHG SECTION - NEED TO UPDATE WITH GHG DATA ###########################
 
@@ -222,14 +187,14 @@ for(i in 1:length(total_inflow$TEMP)){
 
 #clean it up and get vars in order
 total_inflow <- total_inflow %>%
-  select(time, FLOW, TEMP, SALT, OXY_oxy, NIT_amm:CAR_dic) %>% # , CAR_ch4) %>% (NEED TO ADD CH4 DATA!!!)
+  select(time, FLOW, TEMP, SALT, OXY_oxy, NIT_amm:CAR_dic, CAR_ch4) %>% 
   mutate(SIL_rsi = rep(median(silica$DRSI_mgL),length(total_inflow$time))) %>%
   mutate(SIL_rsi = SIL_rsi*1000*(1/60.08)) %>% #setting the Silica concentration to the median 2014 inflow concentration for consistency
   mutate_if(is.numeric, round, 4) #round to 4 digits 
 
 #write file for inflow for the weir, with 2 pools of OC (DOC + DOCR)  
 # NO CH4 AS OF 18 JUNE 2020 - WILL UPDATE SOON!!!
-write.csv(total_inflow, "BVR_inflow_2014_2019_20200618_allfractions_2poolsDOC_noch4.csv", row.names = F)
+write.csv(total_inflow, "BVR_inflow_2014_2019_20200625_allfractions_2poolsDOC_withch4.csv", row.names = F)
 
 #copying dataframe in workspace to be used later
 alltdata = alldata
