@@ -123,26 +123,47 @@ super_final_2 <- as.data.frame(super_final) %>%
   filter(time > as.Date("2014-01-01")) #need to make sure that the CTD data only start after first day of sim
 
 # Check data!
-ggplot(super_final_2,aes(x=time,y=temp,color=depth))+
-  geom_line()
+plot(super_final_2$time,super_final_2$temp)
+plot(super_final_2$time,super_final_2$DO)
+plot(super_final_2$time,super_final_2$chla)
 
 #export CTD data!
-temp <- super_final %>%
+temp <- super_final_2 %>%
   select(time, depth, temp) %>%
   rename(DateTime = time, Depth = depth) %>%
   write.csv("CleanedObsTemp.csv", row.names = F)
 
-oxygen <- super_final %>%
-  select(time, depth, DO) %>%
+oxygen <- super_final_2 %>%
+  select(time, depth, DO)
+oxygen$DO <- as.numeric(oxygen$DO)
+oxygen <- oxygen %>%  
+  mutate(DO = DO*1000/32) %>% #to convert mg/L to molar units
   rename(DateTime = time, Depth = depth, OXY_oxy=DO) %>%
-  mutate(OXY_oxy = OXY_oxy*1000/32) %>% #to convert mg/L to molar units
   write.csv("CleanedObsOxy.csv", row.names = F)
 
-chla <- super_final %>%
-  select(time, depth, chla) %>%
+chla <- super_final_2 %>% select(time, depth, chla)
+chla <- na.omit(chla)
+chla <- chla %>% 
   rename(DateTime = time, Depth = depth, PHY_TCHLA=chla) %>%
   write.csv("CleanedObsChla.csv", row.names = F)
 
+## Find 'winter' depth profiles to use for initial model conditions
+super_final_2$depth <- as.numeric(super_final_2$depth)
+super_final_2$temp <- as.numeric(super_final_2$temp)
+super_final_2$DO <- as.numeric(super_final_2$DO)
+super_final_2$chla <- as.numeric(super_final_2$chla)
+
+ggplot(super_final_2,mapping=aes(x=time,y=temp,color=as.factor(depth)))+
+  geom_line()
+
+ggplot(super_final_2,mapping=aes(x=time,y=DO,color=as.factor(depth)))+
+  geom_line()
+
+ggplot(super_final_2,mapping=aes(x=time,y=chla,color=as.factor(depth)))+
+  geom_line()
+
+ggplot(super_final_2,mapping=aes(x=temp,y=-depth,color=as.factor(time)))+
+  geom_line()
 
 ###########################################################
 ###### WATER CHEM DATA FROM EDI
@@ -153,9 +174,9 @@ inUrl1  <- "https://pasta.lternet.edu/package/data/eml/edi/199/6/2b3dc84ae6b12d1
 infile1 <- paste0(getwd(),"/chem.csv")
 download.file(inUrl1,infile1,method="curl")
 
-FCRchem <- read.csv("chem.csv", header=T) %>%
+BVRchem <- read.csv("chem.csv", header=T) %>%
   select(Reservoir:DIC_mgL) %>%
-  dplyr::filter(Reservoir=="FCR") %>%
+  dplyr::filter(Reservoir=="BVR") %>%
   dplyr::filter(Site==50) %>%
   mutate(DateTime = as.POSIXct(strptime(DateTime, "%Y-%m-%d", tz="EST"))) %>%
   select(DateTime, Depth_m, NH4_ugL:DIC_mgL) %>%
@@ -172,10 +193,10 @@ FCRchem <- read.csv("chem.csv", header=T) %>%
   filter(OGM_docr<500) %>% #remove high DOC outliers
   distinct(DateTime, Depth, .keep_all=TRUE)
  
-ggplot(FCRchem, aes(DateTime, OGM_docr, colour=Depth)) + 
+ggplot(BVRchem, aes(DateTime, OGM_docr, colour=Depth)) + 
   geom_point()
 
-write.csv(FCRchem, "field_chem_2DOCpools.csv", row.names = F)
+write.csv(BVRchem, "field_chem_2DOCpools.csv", row.names = F)
 
 
 #######now make FCR chem dataset with one DOC pool
@@ -205,24 +226,26 @@ write.csv(FCRchem, "field_chem_1DOCpool.csv", row.names = F)
 ###### ANCILLARY LAB CHEMISTRY DATASETS NEEDED FOR CALIBRATION 
 
 #read in lab dataset of dissolved silica, measured by Jon in summer 2014 only
-silica <- read.csv("FCR2014_Chemistry.csv", header=T) %>%
+silica <- read.csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/inputs/BVR2014_Chemistry.csv", header=T) %>%
   select(Date, Depth, DRSI_mgL) %>%
-  mutate(Date = as.POSIXct(strptime(Date, "%Y-%m-%d", tz="EST"))) %>%
-  dplyr::filter(Depth < 10) %>% #to exclude depth 999, which = weir inflow site
+  mutate(Date = as.POSIXct(strptime(Date, "%m/%d/%Y", tz="EST"))) %>%
   rename(DateTime = Date, SIL_rsi=DRSI_mgL) %>%
   mutate(SIL_rsi = SIL_rsi*1000*(1/60.08)) #convert to molar units
+
+silica <- na.omit(silica)
+
 write.csv(silica, "field_silica.csv", row.names = F)
 
 #read in lab dataset of dissolved methane concentrations, measured in FCR
-ch4 <- read.csv("Dissolved_GHG_data_FCR_BVR_site50_inf_wet_15_19_not_final.csv", header=T) %>%
-  dplyr::filter(Reservoir=="FCR") %>%
-  dplyr::filter(Depth_m < 10) %>% #to remove weir inflow site
+ch4 <- read.csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/inputs/Dissolved_GHG_data_FCR_BVR_site50_inf_wet_15_19_not_final.csv", header=T) %>%
+  dplyr::filter(Reservoir=="BVR") %>%
+  dplyr::filter(Depth_m < 50) %>% #to remove weir inflow site
   mutate(DateTime = as.POSIXct(strptime(DateTime, "%Y-%m-%d", tz="EST"))) %>%
   rename(Depth = Depth_m, CAR_ch4 = ch4_umolL, CAR_pCO2 = co2_umolL) %>%
   select(DateTime, Depth, CAR_ch4, CAR_pCO2) %>%
   mutate(CAR_pCO2 = CAR_pCO2*(0.0018/1000000)/0.0005667516) %>% #to convert umol/L to pCO2
   group_by(DateTime, Depth) %>%
-  summarise(CAR_pCO2=mean(CAR_pCO2), CAR_ch4=mean(CAR_ch4))
+  summarise(CAR_pCO2=mean(CAR_pCO2,na.rm=TRUE), CAR_ch4=mean(CAR_ch4,na.rm=TRUE))
 write.csv(ch4, "field_gases.csv", row.names=F)
 
 ###########################################################
@@ -235,10 +258,10 @@ download.file(inUrl1,infile1,method="curl")
 #note that something's funky with this file- I had to open it up and re-format dates before it could be used
 
 secchi <- read.csv("Secchi_depth_2013-2019.csv", header=T) %>%
-  dplyr::filter(Reservoir=="FCR") %>%
+  dplyr::filter(Reservoir=="BVR") %>%
   dplyr::filter(Site==50) %>%
   dplyr::filter(Flag_Secchi==0) %>%
-  mutate(DateTime = as.POSIXct(strptime(DateTime, "%Y-%m-%d", tz="EST"))) %>%
+  mutate(DateTime = as.POSIXct(strptime(DateTime, "%m/%d/%Y", tz="EST"))) %>%
   mutate(Depth = rep(1, length(DateTime))) %>%
   mutate(extc_coef = Secchi_m/1.7) %>%
   select(DateTime, Depth, Secchi_m, extc_coef)
