@@ -8,6 +8,7 @@ setwd("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/field_data")
 
 library(tidyverse)
 library(lubridate)
+library(zoo)
 
 #focal depths we are trying to compare modeled data vs observations; for CTD/YSI casts
 #assumed the deepest point of BVR = 11 m
@@ -165,6 +166,29 @@ ggplot(super_final_2,mapping=aes(x=time,y=chla,color=as.factor(depth)))+
 ggplot(super_final_2,mapping=aes(x=temp,y=-depth,color=as.factor(time)))+
   geom_line()
 
+sup <- super_final_2 %>% mutate(doy = yday(time)) %>% filter(doy>335)
+
+ggplot(sup,mapping=aes(x=temp,y=-depth,color=as.factor(time)))+
+  geom_line()
+
+sup <- sup %>% group_by(depth) %>% summarize_all(funs(mean)) # Average of 12-06-2018 and 12-06-2019
+
+# Convert oxygen to correct units
+sup <- sup %>% mutate(DO = DO*1000/32) #to convert mg/L to molar units
+
+# Extrapolate to initial depths needed
+depth <- c(0.1, 0.33, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3, 3.33, 3.66, 4, 4.33, 4.66, 5, 5.33, 5.66, 6, 6.33, 6.66, 7, 7.33, 7.66, 8, 8.33, 8.66, 9, 9.33, 9.66, 10, 10.33, 10.66, 11, 11.33, 11.66, 12, 12.33, 12.66, 13, 13.33)
+initdepths <- rep(-99,length(depth))
+
+initdepths <- cbind.data.frame(depth,initdepths)
+initdepths <- merge(initdepths, sup, by="depth", all.x=TRUE, all.y=TRUE)
+
+initdepths <- initdepths %>% mutate(temp = na.fill(na.approx(temp,na.rm=FALSE),"extend")) %>% 
+  mutate(DO = na.fill(na.approx(DO,na.rm=FALSE),"extend")) %>% 
+  mutate(chla = na.fill(na.approx(chla,na.rm=FALSE),"extend")) %>% 
+  select(depth,temp,DO,chla) %>% 
+  write.csv("Init_CTD.csv", row.names = F)
+
 ###########################################################
 ###### WATER CHEM DATA FROM EDI
 
@@ -198,6 +222,21 @@ ggplot(BVRchem, aes(DateTime, OGM_docr, colour=Depth)) +
 
 write.csv(BVRchem, "field_chem_2DOCpools.csv", row.names = F)
 
+# Select 12/6/18 for Initial chemistry conditions
+chem <- BVRchem %>% filter(DateTime==as.POSIXct("2018-12-06")) %>% rename(depth=Depth)
+init_chem <- rep(-99,length(depth))
+
+init_chem <- cbind.data.frame(depth,init_chem)
+init_chem <- merge(init_chem, chem, by="depth", all.x=TRUE, all.y=TRUE)
+
+init_chem <- init_chem %>% mutate(NIT_amm = na.fill(na.approx(NIT_amm,na.rm=FALSE),"extend")) %>% 
+  mutate(NIT_nit = na.fill(na.approx(NIT_nit,na.rm=FALSE),"extend")) %>% 
+  mutate(PHS_frp = na.fill(na.approx(PHS_frp,na.rm=FALSE),"extend")) %>%
+  mutate(OGM_doc = na.fill(na.approx(OGM_doc,na.rm=FALSE),"extend")) %>% 
+  mutate(OGM_docr = na.fill(na.approx(OGM_docr,na.rm=FALSE),"extend")) %>% 
+  mutate(CAR_dic = na.fill(na.approx(CAR_dic,na.rm=FALSE),"extend")) %>% 
+  select(depth,NIT_amm,NIT_nit,PHS_frp,OGM_doc,OGM_docr,CAR_dic) %>% 
+  write.csv("Init_chem.csv", row.names = F)
 
 #######now make FCR chem dataset with one DOC pool
 FCRchem <- read.csv("chem.csv", header=T) %>%
