@@ -1,6 +1,8 @@
 #originally written by CCC on 16 July 2018 to create weir and wetland inflow files + outflow for FCR GLM model
 #updated 1 June 2020 to be made "tidy" and update nutrient fractions for inflows
 # Updated for BVR GLM inflow files: A Hounshell, 18 Jun 2020
+# Updated 29 June 2020 - based on GLM run, model is underestimating water level; going to assume water level
+# is constant (i.e., no dv/dt term after 8-19-2014)
 
 setwd("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/inputs")
 sim_folder <- getwd()
@@ -15,10 +17,9 @@ library(lubridate)
 
 # First, read in inflow file generated from Thronthwaite Overland flow model + groundwater recharge
 # From HW: for entire watershed (?); units in m3/s
-inflow <- read_csv("BVR_flow_calcs.csv") %>% 
-  dplyr::select(time,Q_cmps) %>% 
-  rename(time=time,FLOW=Q_cmps) %>% 
-  mutate(time = as.POSIXct(strptime(time,"%m/%d/%Y", tz="EST")))
+inflow <- read_csv("BVR_flow_calcs.csv")
+names(inflow)[2] <- "FLOW"
+inflow$time = as.POSIXct(strptime(inflow$time,"%m/%d/%Y", tz="EST"))
  
 #diagnostic plot
 plot(inflow$time, inflow$FLOW)
@@ -32,8 +33,8 @@ inUrl1  <- "https://pasta.lternet.edu/package/data/eml/edi/202/6/96bdffa73741ec6
 infile1 <- paste0(getwd(),"/inflow_for_EDI_2013_06Mar2020.csv")
 download.file(inUrl1,infile1,method="curl")
 
-temp<-read_csv("inflow_for_EDI_2013_06Mar2020.csv") %>% 
-  dplyr::select(DateTime, WVWA_Temp_C) %>% 
+temp<-read_csv("inflow_for_EDI_2013_06Mar2020.csv") 
+temp <- temp %>% select(DateTime, WVWA_Temp_C) %>% 
   rename(time=DateTime, TEMP=WVWA_Temp_C) %>%
   mutate(time = as.POSIXct(strptime(time, "%Y-%m-%d", tz="EST"))) %>%
   dplyr::filter(time > "2013-12-31" & time < "2020-01-01") %>%
@@ -193,7 +194,6 @@ total_inflow <- total_inflow %>%
   mutate_if(is.numeric, round, 4) #round to 4 digits 
 
 #write file for inflow for the weir, with 2 pools of OC (DOC + DOCR)  
-# NO CH4 AS OF 18 JUNE 2020 - WILL UPDATE SOON!!!
 write.csv(total_inflow, "BVR_inflow_2014_2019_20200625_allfractions_2poolsDOC_withch4.csv", row.names = F)
 
 #copying dataframe in workspace to be used later
@@ -275,6 +275,10 @@ outflow <- outflow %>% select(Date,FLOW) %>%
   mutate_if(is.numeric,round,4) #round to 4 digits
 names(outflow)[1] <- "time"
 
+outflow <- outflow %>% filter(time<as.POSIXct("2014-08-19"))
+stream_flow <- inflow %>% filter(time>as.POSIXct("2014-08-19")) %>% select(time,FLOW)
+outflow <- rbind.data.frame(outflow,stream_flow)
+
 #diagnostic plot
 ggplot()+
   geom_line(outflow,mapping=aes(x=time,y=FLOW,color="Outflow"))+
@@ -282,5 +286,5 @@ ggplot()+
   theme_classic(base_size=15)
 
 #write file
-write.csv(outflow, "BVR_spillway_outflow_dvdt_2014_2019_20200619.csv", row.names=F)
+write.csv(outflow, "BVR_spillway_outflow_2014_2019_20200628.csv", row.names=F)
   
