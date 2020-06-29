@@ -46,7 +46,7 @@ water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
 # Read in and plot water level observations
 wlevel <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
 wlevel$Date <- as.POSIXct(strptime(wlevel$Date, "%m/%d/%Y", tz="EST"))
-wlevel <- wlevel %>% filter(Date>as.POSIXct("2013-12-31"))
+wlevel <- wlevel %>% filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
 
 plot(water_level$DateTime,water_level$surface_height)
 points(wlevel$Date, wlevel$BVR_WaterLevel_m, type="l",col="red")
@@ -135,6 +135,9 @@ compare_to_field(nc_file, field_file, nml_file = nml_file, metric = 'schmidt.sta
 RMSE = function(m, o){
   sqrt(mean((m - o)^2))
 }
+
+# Use this function to calculate RMSE for water level
+RMSE(water_level$surface_height,wlevel$BVR_WaterLevel_m)
 
 temps <- resample_to_field(nc_file, field_file, precision="mins", method='interp')
 temps<-temps[complete.cases(temps),]
