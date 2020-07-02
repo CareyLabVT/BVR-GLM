@@ -69,7 +69,8 @@ inflow_weir<-read.csv("inputs/BVR_inflow_2014_2019_20200625_allfractions_2poolsD
 outflow$time<-as.POSIXct(strptime(outflow$time, "%Y-%m-%d", tz="EST"))
 inflow_weir$time<-as.POSIXct(strptime(inflow_weir$time, "%Y-%m-%d", tz="EST"))
 
-plot(inflow_weir$time,inflow_weir$FLOW)
+# Scaled to inflow_scaling (as of 20200702 = 1.05)
+plot(inflow_weir$time,inflow_weir$FLOW*1.05)
 
 # Calculate WRT from modeled volume and measured outflow
 volume$time<-as.POSIXct(strptime(volume$time, "%Y-%m-%d", tz="EST"))
@@ -102,9 +103,10 @@ watertemp<-merge(modtemp, obstemp, by=c("DateTime","Depth")) %>%
   rename(modtemp = temp.x, obstemp = temp.y)
 for(i in 1:length(unique(watertemp$Depth))){
   tempdf<-subset(watertemp, watertemp$Depth==depths[i])
-  plot(tempdf$DateTime, tempdf$obstemp, type='l', col='red',
+  plot(tempdf$DateTime, tempdf$obstemp, col='red',
        ylab='temperature', xlab='time',
        main = paste0("Obs=Red,Mod=Black,Depth=",depths[i]),ylim=c(0,30))
+       points(tempdf$DateTime, tempdf$obstemp, type = "l", col='red')
        points(tempdf$DateTime, tempdf$modtemp, type="l",col='black')
 }
 
@@ -114,6 +116,7 @@ therm_depths <- compare_to_field(nc_file, field_file, metric="thermo.depth", pre
 compare_to_field(nc_file, field_file, metric="thermo.depth", precision="days", method='interp',as_value=F, na.rm=TRUE) #prints RMSE
 plot(therm_depths$DateTime,therm_depths$mod, type="l", ylim=c(1,13),main = paste0("ThermoclineDepth: Obs=Red, Mod=Black"),
      ylab="Thermocline depth, in m")
+points(therm_depths$DateTime, therm_depths$obs,col="red")
 points(therm_depths$DateTime, therm_depths$obs, type="l",col="red")
 
 #Run sim diagnostics and calculate RMSE using glmtools
