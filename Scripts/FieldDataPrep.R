@@ -222,6 +222,23 @@ ggplot(BVRchem, aes(DateTime, OGM_docr, colour=Depth)) +
 
 write.csv(BVRchem, "field_chem_2DOCpools.csv", row.names = F)
 
+### Plot some exploratory graphs for Chem
+ggplot(BVRchem,aes(DateTime,NIT_nit,colour=as.factor(Depth)))+
+  geom_point()+
+  theme_classic(base_size = 15)
+
+ggplot(BVRchem,aes(DateTime,NIT_amm,colour=as.factor(Depth)))+
+  geom_point()+
+  theme_classic(base_size = 15)
+
+ggplot(BVRchem,aes(DateTime,PHS_frp,colour=as.factor(Depth)))+
+  geom_point()+
+  theme_classic(base_size = 15)
+
+ggplot(BVRchem,aes(DateTime,OGM_doc,colour=as.factor(Depth)))+
+  geom_point()+
+  theme_classic(base_size = 15)
+
 # Select 12/6/18 for Initial chemistry conditions
 chem <- BVRchem %>% filter(DateTime==as.POSIXct("2018-12-06")) %>% rename(depth=Depth)
 init_chem <- rep(-99,length(depth))
@@ -286,6 +303,15 @@ ch4 <- read.csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/inputs/Dissolve
   group_by(DateTime, Depth) %>%
   summarise(CAR_pCO2=mean(CAR_pCO2,na.rm=TRUE), CAR_ch4=mean(CAR_ch4,na.rm=TRUE))
 write.csv(ch4, "field_gases.csv", row.names=F)
+
+### Exploratory graphs
+ggplot(ch4,aes(DateTime,CAR_pCO2,colour=as.factor(Depth)))+
+  geom_point()+
+  theme_classic(base_size = 15)
+
+ggplot(ch4,aes(DateTime,CAR_ch4,colour=as.factor(Depth)))+
+  geom_point()+
+  theme_classic(base_size = 15)
 
 ###########################################################
 ###### SECCHI DATA FROM EDI
