@@ -24,6 +24,12 @@ nldas <- nldas %>% mutate(StreamTemp = ifelse(AirTemp >= -1.310, (1.5+(0.837*Air
 
 nldas_2019 <- nldas %>% filter(time>as.POSIXct("2019-05-01")&time<as.POSIXct("2019-10-05"))
 
+# Load in FCR 100 inflow data
+temp <-read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/inputs/inflow_for_EDI_2013_06Mar2020.csv")
+temp$DateTime = (as.POSIXct(strptime(temp$DateTime, "%Y-%m-%d", tz="EST")))
+temp <- temp %>% group_by(DateTime) %>% summarize_all(funs(mean))
+temp_19 <- temp %>% group_by(DateTime) %>% summarize_all(funs(mean)) %>% filter(DateTime>as.POSIXct("2019-05-01")&DateTime<as.POSIXct("2019-10-05"))
+
 # Plot
 ggplot()+
   geom_point(bvr,mapping=aes(x=DateTime,y=Temp_Celcius,color=Site))+
@@ -32,4 +38,12 @@ ggplot()+
   geom_line(fcr,mapping=aes(x=DateTime,y=Temp_Celcius,color=Site))+
   geom_point(nldas_2019,mapping=aes(x=time,y=StreamTemp,color="NLDAS"))+
   geom_line(nldas_2019,mapping=aes(x=time,y=StreamTemp,color="NLDAS"))+
+  geom_point(temp_19,mapping=aes(x=DateTime,y=WVWA_Temp_C,color="Weir"))+
+  geom_line(temp_19,mapping=aes(x=DateTime,y=WVWA_Temp_C,color="Weir"))+
+  theme_classic(base_size=15)
+
+# Plot NLDAS vs. Weir
+ggplot()+
+  geom_line(nldas,mapping=aes(x=time,y=StreamTemp,color="NLDAS"))+
+  geom_line(temp,mapping=aes(x=DateTime,y=WVWA_Temp_C,color="Weir"))+
   theme_classic(base_size=15)
