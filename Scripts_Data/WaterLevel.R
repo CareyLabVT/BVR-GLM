@@ -7,12 +7,28 @@
 pacman::p_load(tidyverse,ggplot2,zoo)
 
 ## Load WVWA data (2009-2018) (will need to be updated!)
-wvwa <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR_GLM/BVR-GLM/Raw_Data/Beaver_Weir_Readings_29Sep18_Converted.csv")
+wvwa <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Raw_Data/Beaver_Weir_Readings_29Sep18_Converted.csv")
 wvwa$Date <- as.POSIXct(strptime(wvwa$Date, "%m/%d/%Y", tz = "EST"))
 
 ## Load in Carey lab data (2018 to 2019)
-carey <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR_GLM/BVR-GLM/Raw_Data/2018to2019_WaterLevel.csv")
+carey <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Raw_Data/2018to2019_WaterLevel.csv")
 carey$Date <- as.POSIXct(strptime(carey$Date, "%m/%d/%Y", tz = "EST"))
+
+# Plot both
+ggplot()+
+  geom_point(wvwa,mapping=aes(x=Date,y=BVR_WaterLevel_m,color="WVWA"))+
+  geom_line(wvwa,mapping=aes(x=Date,y=BVR_WaterLevel_m,color="WVWA"))+
+  geom_point(carey,mapping=aes(x=Date,y=BVR_WaterLevel_m,color="VT"))+
+  geom_line(carey,mapping=aes(x=Date,y=BVR_WaterLevel_m,color="VT"))+
+  theme_classic(base_size=15)
+
+ggplot()+
+  geom_point(wvwa,mapping=aes(x=Date,y=BVR_WaterLevel_m,color="WVWA"))+
+  geom_line(wvwa,mapping=aes(x=Date,y=BVR_WaterLevel_m,color="WVWA"))+
+  geom_point(carey,mapping=aes(x=Date,y=BVR_WaterLevel_m,color="VT"))+
+  geom_line(carey,mapping=aes(x=Date,y=BVR_WaterLevel_m,color="VT"))+
+  xlim(as.POSIXct("2018-04-01"),as.POSIXct("2018-12-31"))+
+  theme_classic(base_size=15)
 
 ## Merge the two data sets by date
 carey_wl <- carey %>% select(Date, BVR_WaterLevel_m) %>% drop_na(BVR_WaterLevel_m)
