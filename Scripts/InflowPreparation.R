@@ -1,8 +1,7 @@
 #originally written by CCC on 16 July 2018 to create weir and wetland inflow files + outflow for FCR GLM model
 #updated 1 June 2020 to be made "tidy" and update nutrient fractions for inflows
 # Updated for BVR GLM inflow files: A Hounshell, 18 Jun 2020
-# Updated 29 June 2020 - based on GLM run, model is underestimating water level; going to assume water level
-# is constant (i.e., no dv/dt term after 8-19-2014)
+# Updated 08 July 2020 per FCR inflow file: Added DONR and DOPR fractions for inflow prep
 
 setwd("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/inputs")
 sim_folder <- getwd()
@@ -33,11 +32,11 @@ inUrl1  <- "https://pasta.lternet.edu/package/data/eml/edi/202/6/96bdffa73741ec6
 infile1 <- paste0(getwd(),"/inflow_for_EDI_2013_06Mar2020.csv")
 download.file(inUrl1,infile1,method="curl")
 
-temp<-read_csv("inflow_for_EDI_2013_06Mar2020.csv") 
+temp <- read_csv("inflow_for_EDI_2013_06Mar2020.csv")
+temp$DateTime = as.POSIXct(strptime(temp$DateTime,"%Y-%m-%d", tz="EST"))
 temp <- temp %>% select(DateTime, WVWA_Temp_C) %>% 
   rename(time=DateTime, TEMP=WVWA_Temp_C) %>%
-  mutate(time = as.POSIXct(strptime(time, "%Y-%m-%d", tz="EST"))) %>%
-  dplyr::filter(time > "2013-12-31" & time < "2020-01-01") %>%
+  dplyr::filter(time > as.POSIXct("2013-12-31") & time < as.POSIXct("2020-01-01")) %>% 
   group_by(time) %>% 
   summarise(TEMP=mean(TEMP)) #gives averaged daily temp in C
 
@@ -153,8 +152,6 @@ plot(alldata$time, alldata$TN_ugL)
 plot(alldata$time, alldata$TP_ugL)
 plot(alldata$time, alldata$DIC_mgL)
 
-############################# END GHG SECTION - NEED TO UPDATE WITH GHG DATA ###########################
-
 #need to convert mass observed data into mmol/m3 units for two pools of organic carbon
 total_inflow <- alldata %>% 
   mutate(NIT_amm = NH4_ugL*1000*0.001*(1/18.04)) %>% 
@@ -165,13 +162,18 @@ total_inflow <- alldata %>%
   mutate(TN_ugL = TN_ugL*1000*0.001*(1/14)) %>% 
   mutate(TP_ugL = TP_ugL*1000*0.001*(1/30.97)) %>% 
   mutate(OGM_poc = 0.1*(OGM_doc+OGM_docr)) %>% #assuming that 10% of DOC is POC (Wetzel page 755)
-  mutate(OGM_don = (5/6)*(TN_ugL-(NIT_amm+NIT_nit))) %>% #DON is ~5x greater than PON (Wetzel page 220)
+  mutate(OGM_don = (5/6)*(TN_ugL-(NIT_amm+NIT_nit))*0.10) %>% #DON is ~5x greater than PON (Wetzel page 220)
+  mutate(OGM_donr = (5/6)*(TN_ugL-(NIT_amm+NIT_nit))*0.90) %>% #to keep mass balance with DOC, DONr is 90% of total DON
   mutate(OGM_pon = (1/6)*(TN_ugL-(NIT_amm+NIT_nit))) %>%
-  mutate(OGM_dop = 0.3*(TP_ugL-PHS_frp)) %>% #Wetzel page 241, 70% of total organic P = particulate organic; 30% = dissolved organic P
+  mutate(OGM_dop = 0.3*(TP_ugL-PHS_frp)*0.10) %>% #Wetzel page 241, 70% of total organic P = particulate organic; 30% = dissolved organic P
+  mutate(OGM_dopr = 0.3*(TP_ugL-PHS_frp)*0.90) %>% #Wetzel page 241, 70% of total organic P = particulate organic; 30% = dissolved organic P
   mutate(OGM_pop = 0.7*(TP_ugL-PHS_frp)) %>% 
-  mutate(PHS_frp_ads = PHS_frp) %>% #Following Farrell et al. 2020 EcolMod
+  #mutate(PHS_frp_ads = PHS_frp) %>% #Following Farrell et al. 2020 EcolMod
   mutate(CAR_dic = DIC_mgL*1000*(1/52.515)) #Long-term avg pH of FCR is 6.5, at which point CO2/HCO3 is about 50-50
 #given this disparity, using a 50-50 weighted molecular weight (44.01 g/mol and 61.02 g/mol, respectively)
+#note: we are not using a DONr recalcitrant pool for inflows because "bacterial utilization of these 
+#compounds [i.e. DON] is extremely rapid" Wetzel p. 220
+#because we have added the pool of PHS_frp_ads, which functionally is DOPr, not adding a DOPr pool
   
 #reality check of mass balance: these histograms should be at zero minus rounding errors
 hist(total_inflow$TP_ugL - (total_inflow$PHS_frp + total_inflow$OGM_dop + total_inflow$OGM_pop))
@@ -194,7 +196,7 @@ total_inflow <- total_inflow %>%
   mutate_if(is.numeric, round, 4) #round to 4 digits 
 
 #write file for inflow for the weir, with 2 pools of OC (DOC + DOCR)  
-write.csv(total_inflow, "BVR_inflow_2014_2019_20200625_allfractions_2poolsDOC_withch4.csv", row.names = F)
+write.csv(total_inflow, "BVR_inflow_2014_2019_20200708_allfractions_2poolsDOC_withch4.csv", row.names = F)
 
 #copying dataframe in workspace to be used later
 alltdata = alldata
