@@ -20,17 +20,13 @@ download.file(inUrl1,infile1,method="curl")
 fcr <- read.csv("Met_final_2015_2019.csv", header=T)
 fcr$DateTime <- as.POSIXct(strptime(fcr$DateTime, "%Y-%m-%d", tz = "EST"))
 
-# Convert USGS data from in/d to mm/d
-# AGH NOTE: Pretty sure in/d was in mm/d?
-usgs <- usgs %>% mutate(p_mm = P_inperd*25.4)
-
 # Average nldas data across days (mm/d)
-# NOTE: Needed to convert NLDAS data to hourly rain by multiplying by 60 then summing over the day
-nldas_rain <- nldas %>% select(time,Rain) %>% mutate(Rain_hr = Rain*60) %>% 
+# NOTE: Needed to convert NLDAS data to hourly rain by multiplying by 'uncoverting' from m/day to mm/d
+nldas_rain <- nldas %>% select(time,Rain) %>% mutate(Rain_hr = Rain*1000/24) %>% 
   group_by(time) %>% summarise_all(funs(sum))
 
 
-# Averagey FCR data across days (mm/d)
+# Average FCR data across days (mm/d)
 fcr_rain <- fcr %>% select(DateTime,Rain_Total_mm) %>% group_by(DateTime) %>% summarise_all(funs(sum))
 
 # Plot them all
