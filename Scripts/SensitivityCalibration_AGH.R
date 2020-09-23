@@ -8,7 +8,7 @@ rm(list = ls()) #let's clean up that workspace!
 
 setwd("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM")
 #setwd("./FCR_2013_2019GLMHistoricalRun_GLMv3beta") #if pulling from github, sets it to proper wd
-source('Scripts/functions-glm.R') #source the helper functions
+source('Scripts/functions-glm_agh.R') #source the helper functions
 read.packages() 
 
 # RUN GLM AND READ RESULTS  ---------------------------
@@ -405,6 +405,9 @@ os = 'Compiled' #Changed from Unix
 target_fit = -Inf#1.55
 target_iter = 500 #1000*length(init.val)^2
 nml_file = 'glm3.nml'
+var_unit = 'degreesC'
+var_seq = seq(-5,35,1)
+flag = c()
 run_calibvalid(var, var_unit = 'degreesC', var_seq = seq(-5,35,1), cal_pars, pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c()) #var_seq is contour color plot range
 
@@ -426,7 +429,7 @@ nc_file <- file.path(sim_folder, 'output/output.nc') #defines the output.nc file
 water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
 
 # Read in and plot water level observations
-wlevel <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
+wlevel <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol_2.csv")
 wlevel$Date <- as.POSIXct(strptime(wlevel$Date, "%m/%d/%Y", tz="EST"))
 wlevel <- wlevel %>% filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
 

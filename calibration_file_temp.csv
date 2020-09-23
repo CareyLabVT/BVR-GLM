@@ -1,6 +1,8 @@
 par,lb,ub,x0
+wind_factor,0.75,1.25,1
 sw_factor,0.75,1.25,1
 lw_factor,0.75,1.25,1
+coef_mix_hyp,0.2,0.8,0.5
 sed_temp_mean,3,20,11
 sed_temp_mean,3,20,17
 sed_temp_amplitude,2,12,6
