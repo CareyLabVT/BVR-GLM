@@ -2,23 +2,28 @@
 #updated 1 June 2020 to be made "tidy" and update nutrient fractions for inflows
 # Updated for BVR GLM inflow files: A Hounshell, 18 Jun 2020
 # Updated 08 July 2020 per FCR inflow file: Added DONR and DOPR fractions for inflow prep
+# Updated 17 Sep 2020 to include updated inflow model using NLDAS data
 
 setwd("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/inputs")
 sim_folder <- getwd()
 
 #load packages
-library(dplyr)
-library(zoo)
-library(EcoHydRology)
-library(rMR)
-library(tidyverse)
-library(lubridate)
+pacman::p_load(dplyr,zoo,EcoHydRology,rMR,tidyverse,lubridate)
+#library(dplyr)
+#library(zoo)
+#library(EcoHydRology)
+#library(rMR)
+#library(tidyverse)
+#library(lubridate)
 
 # First, read in inflow file generated from Thronthwaite Overland flow model + groundwater recharge
 # From HW: for entire watershed (?); units in m3/s
+# Updated inflow model using NLDAS precip and temp data: units in m3/d - need to convert to m3/s
 inflow <- read_csv("BVR_flow_calcs.csv")
+inflow$time = as.POSIXct(strptime(inflow$time,"%Y-%m-%d", tz="EST"))
+inflow <- inflow[,-c(1)]
 names(inflow)[2] <- "FLOW"
-inflow$time = as.POSIXct(strptime(inflow$time,"%m/%d/%Y", tz="EST"))
+inflow$FLOW = inflow$FLOW/86400
  
 #diagnostic plot
 plot(inflow$time, inflow$FLOW)
@@ -196,7 +201,7 @@ total_inflow <- total_inflow %>%
   mutate_if(is.numeric, round, 4) #round to 4 digits 
 
 #write file for inflow for the weir, with 2 pools of OC (DOC + DOCR)  
-write.csv(total_inflow, "BVR_inflow_2014_2019_20200708_allfractions_2poolsDOC_withch4.csv", row.names = F)
+write.csv(total_inflow, "BVR_inflow_2014_2019_20200917_allfractions_2poolsDOC_withch4_nldasInflow.csv", row.names = F)
 
 #copying dataframe in workspace to be used later
 alltdata = alldata
@@ -277,9 +282,9 @@ outflow <- outflow %>% select(Date,FLOW) %>%
   mutate_if(is.numeric,round,4) #round to 4 digits
 names(outflow)[1] <- "time"
 
-outflow <- outflow %>% filter(time<as.POSIXct("2014-08-19"))
-stream_flow <- inflow %>% filter(time>as.POSIXct("2014-08-19")) %>% select(time,FLOW)
-outflow <- rbind.data.frame(outflow,stream_flow)
+#outflow <- outflow %>% filter(time<as.POSIXct("2014-08-19"))
+#stream_flow <- inflow %>% filter(time>as.POSIXct("2014-08-19")) %>% select(time,FLOW)
+#outflow <- rbind.data.frame(outflow,stream_flow)
 
 #diagnostic plot
 ggplot()+
@@ -288,5 +293,5 @@ ggplot()+
   theme_classic(base_size=15)
 
 #write file
-write.csv(outflow, "BVR_spillway_outflow_2014_2019_20200628.csv", row.names=F)
+write.csv(outflow, "BVR_spillway_outflow_2014_2019_20200917_nldasInflow.csv", row.names=F)
   
