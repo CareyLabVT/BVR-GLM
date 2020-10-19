@@ -562,8 +562,9 @@ glmFUNsa <- function(p){
   #run_glm("Original") #changed from Unix - AGH changed to Windows
   system("./glm")
   
-  mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)
-  
+  suppressWarnings(mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)) #Supressed warnings
+  #mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)
+
   fit = sum((mod[,3] - obs[,3])^2,na.rm = T)
 
   print(paste('SAE', round(fit,1)))
@@ -647,7 +648,7 @@ glmFUNrmse <- function(p){
   #run_glm(os)
   system("./glm")
   
-  mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)
+  suppressWarnings(mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var))
   
   fit = rmse(mod[,3], obs[,3])
   
@@ -766,8 +767,6 @@ run_sensitivity <- function(var, max_r, x0, lb, ub, pars, obs, nml_file){
   
   return()
 }
-
-
 
 run_calibvalid <- function(var, var_unit, var_seq, cal_pars, pars, ub, lb, init.val, 
                            obs, method, calib.metric, os, target_fit, target_iter,nml_file, flag){
