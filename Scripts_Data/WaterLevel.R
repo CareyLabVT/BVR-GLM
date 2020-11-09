@@ -43,7 +43,7 @@ wlevel$mean <- rowMeans(wlevel[c('BVR_WaterLevel_m.x', 'BVR_WaterLevel_m.y')], n
 wlevel_2 <- wlevel %>% select(Date,mean)
 names(wlevel_2)[2] <- "BVR_WaterLevel_m"
 
-write_csv(wlevel_2, path = "C:/Users/ahoun/OneDrive/Desktop/BVR_GLM/BVR-GLM/Data_Output/07Apr20_BVR_WaterLevel.csv")
+write_csv(wlevel_2, path = "C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/09Nov20_BVR_WaterLevel.csv")
 
 # Extrapolate to daily vaules
 
@@ -62,4 +62,4 @@ daily_vol$BVR_WaterLevel_m <- na.approx(daily_vol$BVR_WaterLevel_m)
 daily_vol$BVR_WaterLevel_m <- format(round(daily_vol$BVR_WaterLevel_m,digits = 1),nsmall=1)
 
 # Export out as csv then use Matlab to create for loop to assign volume for each water level daily from 2009-2019
-write_csv(daily_vol, path = "C:/Users/ahoun/OneDrive/Desktop/BVR_GLM/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDaily.csv")
+write_csv(daily_vol, path = "C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/09Nov20_BVR_WaterLevelDaily.csv")
