@@ -20,7 +20,7 @@
    coef_mix_shear = 0.3
    coef_mix_turb = 0.51
    coef_mix_KH = 0.3
-   coef_mix_hyp = 0.4487959
+   coef_mix_hyp = 0.51
    deep_mixing = .true.
    coef_mix_shreq = 0
 /
@@ -37,7 +37,7 @@
 &time
    timefmt = 2
    start = '2014-01-01 12:00:00'
-   stop = '2019-12-31 12:00:00'
+   stop = '2017-12-31 12:00:00'
    dt = 3600
    num_days = 1
    timezone = -5
@@ -49,8 +49,8 @@
 /
 &init_profiles
    num_depths = 41
-   lake_depth = 13.33
-   the_depths = 0.1, 0.33, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3, 3.33, 3.66, 4, 4.33, 4.66, 5, 5.33, 5.66, 6, 6.33, 6.66, 7, 7.33, 7.66, 8, 8.33, 8.66, 9, 9.33, 9.66, 10, 10.33, 10.66, 11, 11.33, 11.66, 12, 12.33, 12.66, 13, 13.33
+   lake_depth = 13
+   the_depths = 0.1, 0.33, 0.66, 1, 1.33, 1.66, 2, 2.33, 2.66, 3, 3.33, 3.66, 4, 4.33, 4.66, 5, 5.33, 5.66, 6, 6.33, 6.66, 7, 7.33, 7.66, 8, 8.33, 8.66, 9, 9.33, 9.66, 10, 10.33, 10.66, 11, 11.33, 11.66, 12, 12.33, 12.66, 13
    the_temps = 4.8132, 4.8021, 4.791, 4.7799, 4.779266667, 4.778633333, 4.778, 4.77235, 4.7667, 4.76105, 4.75195, 4.74285, 4.73375, 4.7358, 4.73785, 4.7399, 4.7376, 4.7353, 4.733, 4.731616667, 4.730233333, 4.72885, 4.723133333, 4.717416667, 4.7117, 4.712833333, 4.713966667, 4.7151, 4.7104, 4.7057, 4.701, 4.700733333, 4.700466667, 4.7002, 4.7002, 4.7002, 4.7002, 4.7002, 4.7002, 4.7002, 4.7002
    the_sals = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
    num_wq_vars = 5
@@ -73,12 +73,12 @@
    cloud_mode = 4
    meteo_fl = 'inputs/BVR_GLM_NLDAS_010113_123119_GMTadjusted.csv'
    subdaily = .true.
-   wind_factor = 0.8668841
-   sw_factor = 1.038505
-   lw_factor = 0.7705478
+   wind_factor = 1
+   sw_factor = 1
+   lw_factor = 1
    at_factor = 1
    rh_factor = 1
-   rain_factor = 1
+   rain_factor = 1.041554
    cd = 0.0013
    ce = 0.0013
    ch = 0.0013
@@ -93,7 +93,7 @@
    strm_hf_angle = 55
    strmbd_slope = 0.05
    strmbd_drag = 0.03
-   inflow_factor = 1
+   inflow_factor = 1.175614
    inflow_fl = 'inputs/BVR_inflow_2014_2019_20200917_allfractions_2poolsDOC_withch4_nldasInflow.csv'
    inflow_varnum = 19
    inflow_vars = 'FLOW','TEMP','SALT','OXY_oxy','NIT_amm','NIT_nit','PHS_frp','OGM_doc','OGM_docr','OGM_poc','OGM_don','OGM_donr','OGM_pon','OGM_dop','OGM_dopr','OGM_pop','CAR_dic','CAR_ch4','SIL_rsi'
@@ -105,7 +105,7 @@
    bsn_len_outl = 855.03
    bsn_wid_outl = 55.96
    outflow_fl = 'inputs/BVR_spillway_outflow_2014_2019_20200917_nldasInflow.csv'
-   outflow_factor = 1
+   outflow_factor = 1.113519
 /
 &snowice
    snow_albedo_factor = 1
@@ -119,7 +119,7 @@
    zone_heights = 6.7, 13.3
    sed_heat_Ksoil = 1.8, 1.8
    sed_temp_depth = 0.2, 0.2
-   sed_temp_mean = 9.28026332821671, 18.7806751259101
-   sed_temp_amplitude = 2.36736
+   sed_temp_mean = 6, 12
+   sed_temp_amplitude = 4, 10
    sed_temp_peak_doy = 270, 270
 /
