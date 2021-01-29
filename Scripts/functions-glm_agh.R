@@ -37,6 +37,7 @@ get_glm_description <- function(iter, perm, id, description){
 }
 
 plot_contour <- function(mod_nc, reference = "surface", h, var, unit, tlevels){
+  
   ncin <- nc_open(mod_nc)
   watdep <- ncvar_get(ncin, "z")
   wattemp <- ncvar_get(ncin, var)
@@ -173,7 +174,7 @@ mod2obs <- function(mod_nc, obs, reference = 'surface', var){
 
 run_glm <- function(os){
   if (os == "Windows"){
-    system('run_glm3.bat',ignore.stdout=TRUE)
+    system("./glm")
   } else if (os == "Unix"){
     system("glm",ignore.stdout=TRUE)
   } else if (os == "Original"){
@@ -213,9 +214,6 @@ match.tstep1 <- function(df1,df2){
   df2$DateTime <- as.POSIXct(strptime(df2$DateTime, "%Y-%m-%d", tz="EST"))
   return(df2)
 }
-
-
-
 
 get_nse <- function(x, y){
   id1 <- !is.na(obs[,3]) 

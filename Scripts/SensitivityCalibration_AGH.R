@@ -6,22 +6,42 @@
 
 rm(list = ls()) #let's clean up that workspace!
 
-setwd("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM")
+setwd("C:/Users/ahoun/Desktop/BVR-GLM")
 #setwd("./FCR_2013_2019GLMHistoricalRun_GLMv3beta") #if pulling from github, sets it to proper wd
-source('Scripts/functions-glm_agh.R') #source the helper functions
+source('Scripts/functions-glm.R') #source the helper functions
 read.packages() 
 
 # RUN GLM AND READ RESULTS  ---------------------------
 filename = 'BVR'
 out = 'output/output.nc' 
 sim_vars(out)
-#os = "Original"
+os = "Windows"
 
 sim_folder<-getwd()
 
 #run_glm("Original") #pulling from Cayelan's version
 system("./glm")
 plot_temp(out, col_lim = c(0,30))
+
+# Check water level?
+par(mfrow=c(1,1))
+
+nc_file <- file.path(sim_folder, 'output/output.nc') #defines the output.nc file 
+
+#get water level
+water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
+
+# Read in and plot water level observations
+wlevel <- read_csv("C:/Users/ahoun/Desktop/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
+wlevel$Date <- as.POSIXct(strptime(wlevel$Date, "%m/%d/%Y", tz="EST"))
+wlevel <- wlevel %>% filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
+
+plot(water_level$DateTime,water_level$surface_height)
+points(wlevel$Date, wlevel$BVR_WaterLevel_m, type="l",col="red")
+
+# Calculate NSE (good call, Heather!)
+NSE(water_level$surface_height,wlevel$BVR_WaterLevel_m)
+
 plot_var(file=out,"OXY_oxy",reference="surface")
 
 # GET FIELD DATA FOR CALIBRATION AND VALIDATION  ---------------------------
@@ -52,8 +72,10 @@ file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
 #file.copy('aed2/aed4_1OGMpool_27Aug2019.nml', 'aed2/aed2_1OGMpool_27Aug2019.nml', overwrite = TRUE)
 var = 'Tot_V'
 calib <- matrix(c('par', 'lb', 'ub', 'x0', #THIS LIST WILL BE EDITED BUT START WITH ALL VARS
-                  'inflow_factor',0.8,1.2,1
-                  ), nrow = 2,ncol = 4, byrow = TRUE) #EDIT THE NROW TO REFLECT # OF ROWS IN ANALYSIS
+                  'inflow_factor',0.8,1.2,1,
+                  'rain_factor',0.9,1.1,1,
+                  'runoff_coef',0.1,0.3,0.2
+                  ), nrow = 4,ncol = 4, byrow = TRUE) #EDIT THE NROW TO REFLECT # OF ROWS IN ANALYSIS
 write.table(calib, file = paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), row.names = FALSE, 
             col.names = FALSE, sep = ',',
             quote = FALSE)
@@ -113,7 +135,7 @@ ub <- calib$ub
 pars <- calib$par
 obs <- read_field_obs('field_data/CleanedObsTemp.csv', var)
 nml_file = 'glm3.nml'
-run_sensitivity_vol(var, max_r, x0, lb, ub, pars, obs, nml_file)
+run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
 
 # 2) dissolved oxygen
@@ -431,7 +453,7 @@ obs <- read.csv("field_data/Obs_Tot_v.csv",header=T)
 obs$DateTime <- as.POSIXct(strptime(obs$DateTime, "%m/%d/%Y",tz="EST"))
 method = 'cmaes'
 calib.metric = 'RMSE'
-os = 'Compiled' #Changed from Unix
+os = 'Windows' #Changed from Unix
 target_fit = -Inf#1.55
 target_iter = 500 #1000*length(init.val)^2
 nml_file = 'glm3.nml'
@@ -459,7 +481,7 @@ init.val <- (x0 - lb) *10 /(ub-lb) # NEEDS TO BE UPDATED WITH STARTING VALUES FR
 obs <- read_field_obs('field_data/CleanedObsTemp.csv', var)
 method = 'cmaes'
 calib.metric = 'RMSE'
-os = 'Compiled' #Changed from Unix
+os = 'Windows' #Changed from Unix
 target_fit = -Inf#1.55
 target_iter = 500 #1000*length(init.val)^2
 nml_file = 'glm3.nml'
@@ -487,7 +509,7 @@ nc_file <- file.path(sim_folder, 'output/output.nc') #defines the output.nc file
 water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
 
 # Read in and plot water level observations
-wlevel <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol_2.csv")
+wlevel <- read_csv("C:/Users/ahoun/Desktop/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
 wlevel$Date <- as.POSIXct(strptime(wlevel$Date, "%m/%d/%Y", tz="EST"))
 wlevel <- wlevel %>% filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
 

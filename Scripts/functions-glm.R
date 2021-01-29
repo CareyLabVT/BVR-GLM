@@ -174,7 +174,7 @@ mod2obs <- function(mod_nc, obs, reference = 'surface', var){
 
 run_glm <- function(os){
   if (os == "Windows"){
-    system('run_glm3.bat',ignore.stdout=TRUE)
+    system("./glm")
   } else if (os == "Unix"){
     system("glm",ignore.stdout=TRUE)
   } else if (os == "Original"){
@@ -557,8 +557,9 @@ glmFUNsa <- function(p){
   write_path <- nml_file
   write_nml(eg_nml, file = write_path)
   
-  run_glm("Compiled") #changed from Unix 
-
+  #run_glm("Compiled") #changed from Unix 
+  run_glm(os)
+  
   suppressWarnings(mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)) #Supressed warnings
 
   fit = sum((mod[,3] - obs[,3])^2,na.rm = T)
@@ -638,6 +639,7 @@ glmFUNrmse <- function(p){
   write_nml(eg_nml, file = write_path)
   
   run_glm(os)
+  #system("./glm")
   
   # Check for waterlevel blowing up
   wl <- glmtools::get_surface_height(out)
@@ -810,7 +812,7 @@ run_calibvalid <- function(var, var_unit, var_seq, cal_pars, pars, ub, lb, init.
   # }
 
   calibration.list <- list("start" = '2014-01-01 12:00:00',
-                           "stop" = '2019-12-31 12:00:00')  #EDIT THIS!
+                           "stop" = '2018-12-31 12:00:00')  #EDIT THIS!
   nml <- read_nml('glm3.nml')
   nml <- set_nml(nml, arg_list = calibration.list)
   write_nml(nml, 'glm3.nml')
@@ -922,6 +924,7 @@ it <- 1
   nml <- set_nml(nml, arg_list = validation.list)
   write_nml(nml, 'glm3.nml')
   run_glm(os)
+  #system("./glm")
   h <- paste(filename,', RMSE',
              round(get_rmse(temp_mods <- mod2obs(out, obs, reference = 'surface', var), 
                             obs),2),var_unit,'NSE',
@@ -940,6 +943,7 @@ it <- 1
   nml <- set_nml(nml, arg_list = total.list)
   write_nml(nml, 'glm3.nml')
   run_glm(os)
+  #system("./glm")
   h <- paste(filename,', RMSE',
              round(get_rmse(temp_mods <- mod2obs(out, obs, reference = 'surface', var), 
                             obs),2),var_unit,'NSE',
