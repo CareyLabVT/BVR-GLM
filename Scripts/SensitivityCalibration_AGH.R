@@ -458,9 +458,9 @@ target_fit = -Inf#1.55
 target_iter = 500 #1000*length(init.val)^2
 nml_file = 'glm3.nml'
 var_unit = 'm3'
-var_seq = seq(0,15,1)
+var_seq = seq(0,1600000,1)
 flag = c()
-run_calibvalid(var, var_unit = 'm3', var_seq = seq(0,15,1), cal_pars, pars, ub, lb, init.val, obs, method, 
+run_calibvalid(var, var_unit = 'm3', var_seq = seq(0,1600000,1), cal_pars, pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c()) #var_seq is contour color plot range
 
 
@@ -490,7 +490,6 @@ var_seq = seq(-5,35,1)
 flag = c()
 run_calibvalid(var, var_unit = 'degreesC', var_seq = seq(-5,35,1), cal_pars, pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c()) #var_seq is contour color plot range
-
 
 #to visualize how params can converge
 par(mfrow=c(3,4))
