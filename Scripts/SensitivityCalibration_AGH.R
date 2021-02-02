@@ -4,6 +4,9 @@
 #modified for BVR 8 Aug 2020 HLW
 # Updated by AGH to work with Windows : )
 
+############### 02 Feb 2021 - try calibrating temp before water level?? #######################
+# Water level goes wonky after temp is calibrated....why???
+
 rm(list = ls()) #let's clean up that workspace!
 
 setwd("C:/Users/ahoun/Desktop/BVR-GLM")
@@ -74,7 +77,7 @@ var = 'Tot_V'
 calib <- matrix(c('par', 'lb', 'ub', 'x0', #THIS LIST WILL BE EDITED BUT START WITH ALL VARS
                   'inflow_factor',0.8,1.2,1,
                   'rain_factor',0.9,1.1,1,
-                  'runoff_coef',0.1,0.3,0.2
+                  'outflow_factor',0.8,1.2,1
                   ), nrow = 4,ncol = 4, byrow = TRUE) #EDIT THE NROW TO REFLECT # OF ROWS IN ANALYSIS
 write.table(calib, file = paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), row.names = FALSE, 
             col.names = FALSE, sep = ',',
@@ -89,8 +92,7 @@ obs <- read.csv("field_data/Obs_Tot_v.csv",header=T)
 obs$DateTime <- as.POSIXct(strptime(obs$DateTime, "%m/%d/%Y",tz="EST"))
 nml_file = 'glm3.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
-### NOTE: Kind of had to fudge this since there is only one parameter (which is important!)
-### Eventually just need a calibration_file_Tot_V for the calibration step below!
+
 
 # 1) water temperature, following ISIMIP approach
 #first, copy & paste your glm3.nml and aed2.nml within their respective directories
@@ -462,6 +464,9 @@ var_seq = seq(0,1600000,1)
 flag = c()
 run_calibvalid(var, var_unit = 'm3', var_seq = seq(0,1600000,1), cal_pars, pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c()) #var_seq is contour color plot range
+## Throws error: Error in matrix(check_duplicates, ncol = 2, byrow = TRUE) : 
+# 'data' must be of a vector type, was 'NULL' on line 880 in functions-glm
+# BUT: It still calibrates the inflow_factor, rain_factor, and outflow_factor in the glm3.nml file
 
 
 # 1) water temperature
@@ -485,6 +490,8 @@ os = 'Windows' #Changed from Unix
 target_fit = -Inf#1.55
 target_iter = 500 #1000*length(init.val)^2
 nml_file = 'glm3.nml'
+nml <- read_nml(nml_file) 
+print(nml)
 var_unit = 'degreesC'
 var_seq = seq(-5,35,1)
 flag = c()
