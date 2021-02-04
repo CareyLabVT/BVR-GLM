@@ -37,7 +37,8 @@ water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
 # Read in and plot water level observations
 wlevel <- read_csv("C:/Users/ahoun/Desktop/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
 wlevel$Date <- as.POSIXct(strptime(wlevel$Date, "%m/%d/%Y", tz="EST"))
-wlevel <- wlevel %>% filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
+wlevel <- wlevel %>% 
+  dpylr::filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
 
 plot(water_level$DateTime,water_level$surface_height)
 points(wlevel$Date, wlevel$BVR_WaterLevel_m, type="l",col="red")
@@ -67,31 +68,38 @@ gases$DateTime <-as.POSIXct(strptime(gases$DateTime, "%Y-%m-%d", tz="EST"))
 
 #######################################################
 # RUN SENSITIVITY ANALYSIS  ---------------------------
-#0) Water level
-#first, copy & paste your glm3.nml and aed2.nml within their respective directories
-# and rename as glm4.nml and aed4.nml; these 4.nml versions are going to be rewritten
-file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
-#file.copy('aed2/aed4_20200701_2DOCpools.nml', 'aed2/aed2_20200701_2DOCpools.nml', overwrite = TRUE)
-#file.copy('aed2/aed4_1OGMpool_27Aug2019.nml', 'aed2/aed2_1OGMpool_27Aug2019.nml', overwrite = TRUE)
-var = 'Tot_V'
-calib <- matrix(c('par', 'lb', 'ub', 'x0', #THIS LIST WILL BE EDITED BUT START WITH ALL VARS
-                  'inflow_factor',0.8,1.2,1,
-                  'rain_factor',0.9,1.1,1,
-                  'outflow_factor',0.8,1.2,1
-                  ), nrow = 4,ncol = 4, byrow = TRUE) #EDIT THE NROW TO REFLECT # OF ROWS IN ANALYSIS
-write.table(calib, file = paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), row.names = FALSE, 
-            col.names = FALSE, sep = ',',
-            quote = FALSE)
-max_r = 3
-calib <- read.csv(paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), stringsAsFactors = F)
-x0 <- calib$x0
-lb <- calib$lb
-ub <- calib$ub
-pars <- calib$par
-obs <- read.csv("field_data/Obs_Tot_v.csv",header=T)
-obs$DateTime <- as.POSIXct(strptime(obs$DateTime, "%m/%d/%Y",tz="EST"))
-nml_file = 'glm3.nml'
-run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
+
+## NOTE: Played around with water level calibration (via Tot_V), but was not able
+## to get it to run completely (see notes below) - in addition, did not improve
+## the water level significantly. Ultimately, decided to skip to temp calibration
+## but will keep code here for future use :)
+## A Hounshell, 04 Feb 2021
+
+##0) Water level
+##first, copy & paste your glm3.nml and aed2.nml within their respective directories
+## and rename as glm4.nml and aed4.nml; these 4.nml versions are going to be rewritten
+#file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
+##file.copy('aed2/aed4_20200701_2DOCpools.nml', 'aed2/aed2_20200701_2DOCpools.nml', overwrite = TRUE)
+##file.copy('aed2/aed4_1OGMpool_27Aug2019.nml', 'aed2/aed2_1OGMpool_27Aug2019.nml', overwrite = TRUE)
+#var = 'Tot_V'
+#calib <- matrix(c('par', 'lb', 'ub', 'x0', #THIS LIST WILL BE EDITED BUT START WITH ALL VARS
+#                  'inflow_factor',0.8,1.2,1,
+#                  'rain_factor',0.9,1.1,1,
+#                  'outflow_factor',0.8,1.2,1
+#                  ), nrow = 4,ncol = 4, byrow = TRUE) #EDIT THE NROW TO REFLECT # OF ROWS IN ANALYSIS
+#write.table(calib, file = paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), row.names = FALSE, 
+#            col.names = FALSE, sep = ',',
+#            quote = FALSE)
+#max_r = 3
+#calib <- read.csv(paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), stringsAsFactors = F)
+#x0 <- calib$x0
+#lb <- calib$lb
+#ub <- calib$ub
+#pars <- calib$par
+#obs <- read.csv("field_data/Obs_Tot_v.csv",header=T)
+#obs$DateTime <- as.POSIXct(strptime(obs$DateTime, "%m/%d/%Y",tz="EST"))
+#nml_file = 'glm3.nml'
+#run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
 
 # 1) water temperature, following ISIMIP approach
@@ -437,37 +445,60 @@ run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
 
 # START CALIBRATION  ---------------------------
-# 0) Water level
-file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
-#file.copy('aed2/aed4_20200701_2DOCpools.nml', 'aed2/aed2_20200701_2DOCpools.nml', overwrite = TRUE)
-var = 'Tot_V'
-calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
-cal_pars = calib
-#Reload ub, lb for calibration
-pars <- cal_pars$par
-x0 <- cal_pars$x0
-ub <- cal_pars$ub
-lb <- cal_pars$lb
-#Create initial files
-#init.val <- rep(5, nrow(cal_pars))
-init.val <- (x0 - lb) *10 /(ub-lb) # NEEDS TO BE UPDATED WITH STARTING VALUES FROM YOUR CALIBRATION FILE
-obs <- read.csv("field_data/Obs_Tot_v.csv",header=T)
-obs$DateTime <- as.POSIXct(strptime(obs$DateTime, "%m/%d/%Y",tz="EST"))
-method = 'cmaes'
-calib.metric = 'RMSE'
-os = 'Windows' #Changed from Unix
-target_fit = -Inf#1.55
-target_iter = 500 #1000*length(init.val)^2
-nml_file = 'glm3.nml'
-var_unit = 'm3'
-var_seq = seq(0,1600000,1)
-flag = c()
-run_calibvalid(var, var_unit = 'm3', var_seq = seq(0,1600000,1), cal_pars, pars, ub, lb, init.val, obs, method, 
-               calib.metric, os, target_fit, target_iter, nml_file, flag = c()) #var_seq is contour color plot range
+
+## NOTE: Again, decided against water level calibration, but will keep code here
+## Stats for temp_cal ONLY: NSE = 0.82; RMSE = 0.28
+## Stats for temp_cal + totv_cal: NSE = 0.87; RMSE = 0.25)
+## A Hounshell, 04 Feb 2021
+
+## 0) Water level
+#file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
+##file.copy('aed2/aed4_20200701_2DOCpools.nml', 'aed2/aed2_20200701_2DOCpools.nml', overwrite = TRUE)
+#var = 'Tot_V'
+#calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
+#cal_pars = calib
+##Reload ub, lb for calibration
+#pars <- cal_pars$par
+#x0 <- cal_pars$x0
+#ub <- cal_pars$ub
+#lb <- cal_pars$lb
+##Create initial files
+##init.val <- rep(5, nrow(cal_pars))
+#init.val <- (x0 - lb) *10 /(ub-lb) # NEEDS TO BE UPDATED WITH STARTING VALUES FROM YOUR CALIBRATION FILE
+#obs <- read.csv("field_data/Obs_Tot_v.csv",header=T)
+#obs$DateTime <- as.POSIXct(strptime(obs$DateTime, "%m/%d/%Y",tz="EST"))
+#method = 'cmaes'
+#calib.metric = 'RMSE'
+#os = 'Windows' #Changed from Unix
+#target_fit = -Inf#1.55
+#target_iter = 500 #1000*length(init.val)^2
+#nml_file = 'glm3.nml'
+#nml <- read_nml(nml_file) 
+#print(nml)
+#var_unit = 'm3'
+#var_seq = seq(0,1600000,1)
+#flag = c()
+#run_calibvalid(var, var_unit = 'm3', var_seq = seq(0,1600000,1), cal_pars, pars, ub, lb, init.val, obs, method, 
+#               calib.metric, os, target_fit, target_iter, nml_file, flag = c()) #var_seq is contour color plot range
+
 ## Throws error: Error in matrix(check_duplicates, ncol = 2, byrow = TRUE) : 
 # 'data' must be of a vector type, was 'NULL' on line 880 in functions-glm
 # BUT: It still calibrates the inflow_factor, rain_factor, and outflow_factor in the glm3.nml file
 
+##get water level
+#water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
+#wlevel <- wlevel %>% 
+#  dplyr::filter(Date>as.POSIXct('2014-01-01') & Date<as.POSIXct('2019-01-01'))
+
+## Read in and plot water level observations
+#plot(water_level$DateTime,water_level$surface_height)
+#points(wlevel$Date, wlevel$BVR_WaterLevel_m, type="l",col="red")
+
+## Calculate NSE (good call, Heather!)
+## (NSE for Temp_cal then Water_level cal = 0.87)
+#NSE(water_level$surface_height,wlevel$BVR_WaterLevel_m)
+## RMSE for Temp_cal then Water_level cal = 0.25
+#rmse(water_level$surface_height,wlevel$BVR_WaterLevel_m)
 
 # 1) water temperature
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
@@ -517,14 +548,15 @@ water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
 # Read in and plot water level observations
 wlevel <- read_csv("C:/Users/ahoun/Desktop/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
 wlevel$Date <- as.POSIXct(strptime(wlevel$Date, "%m/%d/%Y", tz="EST"))
-wlevel <- wlevel %>% filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
+wlevel <- wlevel %>% 
+  dplyr::filter(Date>as.POSIXct('2014-01-01') & Date<as.POSIXct('2020-01-01'))
 
 plot(water_level$DateTime,water_level$surface_height)
 points(wlevel$Date, wlevel$BVR_WaterLevel_m, type="l",col="red")
 
 # Calculate NSE (good call, Heather!)
 NSE(water_level$surface_height,wlevel$BVR_WaterLevel_m)
-
+rmse(water_level$surface_height,wlevel$BVR_WaterLevel_m)
 
 # 2) dissolved oxygen
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
