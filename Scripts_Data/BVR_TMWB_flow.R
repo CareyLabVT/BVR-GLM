@@ -1,15 +1,15 @@
-#calculating flow for BVR using the Thorthwaite-mather water balance model
+#calculating flow for BVR using the Thornthwaite-mather water balance model
 #modified to daily timestep - added in recharge to help with baseflow underestimation 11Jun2020
 #Updated 4Sep2020 - change from GSOD temp/precip data to NLDAS for consistency 
 
 #packages
 if (!require("pacman"))install.packages("pacman")
-pacman::p_load(httr,EcoHydRology,GSODR,curl,elevatr,raster,soilDB,rgdal,lattice,lubridate)
+pacman::p_load(httr,EcoHydRology,GSODR,curl,elevatr,raster,soilDB,rgdal,lattice,lubridate, tidyverse)
 
 #soil data
-url="https://websoilsurvey.sc.egov.usda.gov/DSD/Download/AOI/spjjtprhbouwx2jnwkqb04tj/wss_aoi_2020-09-01_12-17-20.zip"
-download.file(url,"mysoil.zip")
-unzip("mysoil.zip")
+url="https://websoilsurvey.sc.egov.usda.gov/DSD/Download/AOI/rf5f3ikjuazplfru4x1wpt1f/wss_aoi_2021-02-15_13-24-28.zip"
+download.file(url,"mysoil.zip") #Note: will probably have to update wss_aoi date if it's been a while - go to wss homepage and click on start wss link on right of page
+unzip("mysoil.zip")            #zoom in to site, use define aoi tool to select desired area, go to download soils data tab, scroll to bottom of page and click "create download link", right click and copy link address, paste on line 10
 list.files()
 
 list.files("wss_aoi_2020-09-01_12-17-20/spatial/",pattern = "shp")
@@ -18,9 +18,9 @@ list.files("wss_aoi_2020-09-01_12-17-20/tabular/")
 objects()
 rm(list=objects())
 
-#Using ROANOKE RIVER AT NIAGARA, VA  usgs gage for as a template (modified for BVR watershed) 
+#Using ROANOKE RIVER AT NIAGARA, VA  usgs gage to use as a template (will write over with BVR-specific data) 
 myflowgage_id="02056000"
-myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2014-01-01",end_date = "2019-12-31")
+myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2013-01-01",end_date = "2019-12-31")
 
 #change coordinates and area for entire BVR watershed
 myflowgage$area<- 2.27 #km
@@ -28,13 +28,28 @@ myflowgage$declat<- 37.31321
 myflowgage$declon<- -79.81535
 
 #read in NLDAS data
-NLDAS<- read.csv("NLDAS_temp_precip.csv")
-NLDAS=data.frame(mdate=NLDAS$date,P=NLDAS$precip,
-                 MaxTemp=NLDAS$max_temp, MinTemp=NLDAS$min_temp)
+NLDAS<- read.csv("./inputs/BVR_GLM_NLDAS_010113_123119_GMTadjusted.csv")
+#NLDAS=data.frame(mdate=NLDAS$date,P=NLDAS$precip,
+#                 MaxTemp=NLDAS$max_temp, MinTemp=NLDAS$min_temp)
 NLDAS[is.na(NLDAS)]=0 # A Quick BUT sloppy removal of NAs
 
 #convert NLDAS date to as.date format
-NLDAS$mdate <-as.Date(NLDAS$mdate)
+NLDAS$time <-as.Date(NLDAS$time)
+
+#convert rain from m/d to mm/hr (which is funny because pretty sure this was the original format of the NLDAS data)
+NLDAS$precip_mm <-NLDAS$Rain * 1000 / 24
+
+
+#average by date
+NLDAS <- NLDAS %>% select(time, AirTemp, precip_mm) %>% group_by(time) %>%
+                    rename(mdate=time) %>%
+                    summarise(MaxTemp_C = max(AirTemp),
+                              MinTemp_C = min(AirTemp),
+                              MeanTemp_C = mean(AirTemp),
+                              Precip_mmpd = sum(precip_mm)) 
+
+#replace flow with NAs because this is specific to Roanoke River (not BVR)
+myflowgage$flowdata[["flow"]] <- NA
 
 # Merge the NLDAS weather data with flow gage to use as our base HRU data structure
 myflowgage$TMWB=merge(myflowgage$flowdata,NLDAS)
@@ -44,6 +59,7 @@ url="https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHD/HU8/HighRes
 curl_download(url,"NHD_H_03010101_HU8_Shape.zip")
 unzip("NHD_H_03010101_HU8_Shape.zip",exdir="03010101") 
 
+#set coordinates to plot DEM raster
 degdist=sqrt(myflowgage$area*4)/80
 mybbox = matrix(c(
   myflowgage$declon - degdist, myflowgage$declon + degdist, 
@@ -102,19 +118,18 @@ soilwetting<-function(AWprev,dP,AWC){
   c(AW,excess)
 }
 
-myflowgage$TMWB$AWC=0.13*400 #AWC=.13 (.12 and .16 were the values obtained from USDA web soil survey)
-  # z=2000mm --> this one is hard becasue it really changes Qpred a LOT...need to figure out what to do here; trees generally have <3500 mm roots...
-myflowgage$TMWB$AvgTemp=(myflowgage$TMWB$MaxTemp+myflowgage$TMWB$MinTemp)/2
-myflowgage$TMWB$dP = 0 # Initializing Net Precipitation
-myflowgage$TMWB$ET = 0 # Initializing ET
+#initialize parameters
+myflowgage$TMWB$AWC=0.13*400 #AWC=.13; 0.12 and 0.16 were the values obtained from USDA web soil survey
+  # z=2000mm --> this one is hard because it really changes Qpred a LOT - calibrate this parameter? trees generally have <3500 mm roots...
+myflowgage$TMWB$dP = 0 # Net precip
+myflowgage$TMWB$ET = 0 # Evapotranspiration
 myflowgage$TMWB$Albedo=.23
-myflowgage$TMWB$PET = 0 # Initializing PET
-myflowgage$TMWB$AW =  100 # Initializing AW
-myflowgage$TMWB$SnowMelt_mm = 0 # Initializing Snow Melt
-myflowgage$TMWB$SnowfallWatEq_mm = 0 # Initializing New Snow 
-myflowgage$TMWB$SnowWaterEq_mm = 0  # Initializing Snow Depth
-myflowgage$TMWB$ExcessIn = 0 # Initializing Excess coming in
-myflowgage$TMWB$ExcessOut = 0 # Initializing Excess going out
+myflowgage$TMWB$PET = 0 # Potential evapotranspiration
+myflowgage$TMWB$AW =  100 # Available water
+myflowgage$TMWB$SnowMelt_mm = 0 
+myflowgage$TMWB$SnowfallWatEq_mm = 0 # New snow
+myflowgage$TMWB$SnowWaterEq_mm = 0  # Snow depth
+myflowgage$TMWB$ExcessOut = 0 # Excess going out (runoff)
 myflowgage$TMWB$Drainage = 0
 myflowgage$TMWB$Qpred=NA
 myflowgage$TMWB$Qpred[1]=0
@@ -131,7 +146,7 @@ TMWBModel<-function(hru_list){
   attach(TMWB)
   
   # Snow accumulation and melt, as well as PET only depend on the surface attributes, and as such, can run  at the beginning, independent of the daily calculated ET, TMWB, and the linear reservoir Storage Discharge (Qmm). 
-  SNO_Energy=SnowMelt(mdate, P, MaxTemp-3, MinTemp-3, myflowgage$declat, 
+  SNO_Energy=SnowMelt(mdate, Precip_mmpd, MaxTemp_C-3, MinTemp_C-3, myflowgage$declat, 
                       slope = 0, aspect = 0, tempHt = 1, windHt = 2, groundAlbedo = 0.25,
                       SurfEmissiv = 0.95, windSp = 2, forest = 0, startingSnowDepth_m = 0,
                       startingSnowDensity_kg_m3=450)
@@ -143,14 +158,14 @@ TMWBModel<-function(hru_list){
   myflowgage$TMWB$SnowWaterEq_mm=SnowWaterEq_mm
   myflowgage$TMWB$SnowfallWatEq_mm=SnowfallWatEq_mm
   myflowgage$TMWB$Albedo[myflowgage$TMWB$SnowfallWatEq_mm>0]=.95
-  PET=PET_fromTemp(Jday=(1+as.POSIXlt(mdate)$yday),Tmax_C=MaxTemp,Tmin_C = MinTemp, lat_radians = myflowgage$declat*pi/180) * 1000
+  PET=PET_fromTemp(Jday=(1+as.POSIXlt(mdate)$yday),Tmax_C=MaxTemp_C,Tmin_C = MinTemp_C, lat_radians = myflowgage$declat*pi/180) * 1000
   myflowgage$TMWB$PET=PET
   
   # Those processes that are dependant on prior days conditions, we run as a loop through each of the days.
   for (t in 2:length(AW)){
     ET[t] = min (AW[t-1],PET[t]*AW[t-1]/AWC[t-1]) 
     # Calculating Net Precipitation 
-    dP[t] = P[t] - SnowfallWatEq_mm[t] - ET[t] + SnowMelt_mm[t]
+    dP[t] = Precip_mmpd[t] - SnowfallWatEq_mm[t] - ET[t] + SnowMelt_mm[t]
     # TMWB Solution
     if (dP[t]<=0) {
       values<-soildrying(AW[t-1],dP[t],AWC[t])
@@ -160,8 +175,8 @@ TMWBModel<-function(hru_list){
       values <- soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
     }
     AW[t]<-values[1] 
-    ExcessOut[t]<-values[2] #this is essentially just runoff (need to divide excess into drainage and runoff components)
-    if(P[t]>0) {Drainage[t]<- P[t] - ExcessOut[t] - ET[t]} #this is recharge equation from Shuler and Mariner 2020
+    ExcessOut[t]<-values[2] #this is essentially just runoff 
+    if(Precip_mmpd[t]>0) {Drainage[t]<- Precip_mmpd[t] - ExcessOut[t] - ET[t]} #recharge equation from Shuler and Mariner 2020
     if(Drainage[t]<0){ Drainage[t]<- 0}
     S[t]=S[t-1]+ExcessOut[t] + Drainage[t]
     Qpred[t]=fcres*S[t]  #Q as calculated from TMWB model (seems to underestimate baseflow without adding in recharge component)
@@ -191,18 +206,18 @@ TMWBModel<-function(hru_list){
 
 # Call the new TMWBModel() function 
 TMWBsol=TMWBModel(myflowgage)
-# Convert Qpred (mm) into Qpred_cmpd (cubic meters per day)
-TMWBsol$TMWB$Qpred_cmpd=TMWBsol$TMWB$Qpred*TMWBsol$area*10^3
-# Convert Qpred_cmpd to Qpred_cmps (1m3/s = 86400 m3/d)
-TMWBsol$TMWB$Qpred_cmps=TMWBsol$TMWB$Qpred_cmpd/86400
+# Convert area from km to m (10^6) and Qpred from mm to m (10^-3) 
+TMWBsol$TMWB$Qpred_m3pd=TMWBsol$TMWB$Qpred*TMWBsol$area*10^3
+# Convert Qpred_m3pd to Qpred_m3ps (1m3/s = 86400 m3/d)
+TMWBsol$TMWB$Qpred_m3ps=TMWBsol$TMWB$Qpred_m3pd/86400
 
 #plots to visualize data
-plot(TMWBsol$TMWB$mdate,TMWBsol$TMWB$Qpred_cmpd,col="red", type='l')
-plot(TMWBsol$TMWB$mdate,TMWBsol$TMWB$Qpred_cmps,col="orange", type='l')
+plot(TMWBsol$TMWB$mdate,TMWBsol$TMWB$Qpred_m3pd,col="red", type='l')
+plot(TMWBsol$TMWB$mdate,TMWBsol$TMWB$Qpred_m3ps,col="orange", type='l')
 plot(TMWBsol$TMWB$mdate,TMWBsol$TMWB$ExcessOut,col="blue", type='l')
 plot(TMWBsol$TMWB$mdate,TMWBsol$TMWB$S,col="green", type='l')
 plot(TMWBsol$TMWB$mdate,TMWBsol$TMWB$Drainage,col="purple", type='l')
 
 #create csv for q export
-QExport<- data.frame("time"=TMWBsol$TMWB$mdate, "Q_BVR_m3/d"=TMWBsol$TMWB$Qpred_cmpd)
-write.csv(QExport, "BVR_flow_calcs.csv")
+QExport<- data.frame("time"=TMWBsol$TMWB$mdate, "Q_BVR_m3/d"=TMWBsol$TMWB$Qpred_m3pd)
+write.csv(QExport, "BVR_flow_calcs_new.csv")
