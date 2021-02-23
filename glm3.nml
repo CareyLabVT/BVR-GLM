@@ -37,7 +37,7 @@
 &time
    timefmt = 2
    start = '2014-01-01 12:00:00'
-   stop = '2017-12-31 12:00:00'
+   stop = '2019-12-31 12:00:00'
    dt = 3600
    num_days = 1
    timezone = -5
@@ -94,7 +94,7 @@
    strmbd_slope = 0.05
    strmbd_drag = 0.03
    inflow_factor = 1
-   inflow_fl = 'inputs/BVR_inflow_2014_2019_20200917_allfractions_2poolsDOC_withch4_nldasInflow.csv'
+   inflow_fl = 'inputs/BVR_inflow_2014_2019_20210223_allfractions_2poolsDOC_withch4_nldasInflow.csv'
    inflow_varnum = 19
    inflow_vars = 'FLOW','TEMP','SALT','OXY_oxy','NIT_amm','NIT_nit','PHS_frp','OGM_doc','OGM_docr','OGM_poc','OGM_don','OGM_donr','OGM_pon','OGM_dop','OGM_dopr','OGM_pop','CAR_dic','CAR_ch4','SIL_rsi'
 /
@@ -104,7 +104,7 @@
    outl_elvs = 585.7
    bsn_len_outl = 855.03
    bsn_wid_outl = 55.96
-   outflow_fl = 'inputs/BVR_spillway_outflow_2014_2019_20200917_nldasInflow.csv'
+   outflow_fl = 'inputs/BVR_spillway_outflow_2014_2019_20210223_nldasInflow.csv'
    outflow_factor = 1
 /
 &snowice

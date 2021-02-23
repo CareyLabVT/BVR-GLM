@@ -13,9 +13,9 @@ pacman::p_load(GLMr,glmtools,tidyverse,lubridate,ncdf4,hydroGOF)
 #library(lubridate)
 #library(ncdf4)
 
-setwd("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM")
+wd <- setwd("/Users/alexgh/Desktop/BVR-GLM")
 #setwd("../BVR-GLM") #if pulling from github, sets it to proper wd, which should be "/FCR_2013_2019GLMHistoricalRun_GLMv3beta"
-sim_folder <- getwd()
+sim_folder <- wd
 
 #look at glm and aed nml files
 nml_file <- paste0(sim_folder,"/glm3.nml")
@@ -29,25 +29,24 @@ print(nml)
 # print(aed_phytos)
 
 #run the model!
-#system2(paste0(sim_folder, "/", "glm"), stdout = TRUE, stderr = TRUE, env = paste0("DYLD_LIBRARY_PATH=",sim_folder))
+system2(paste0(sim_folder, "/", "glm"), stdout = TRUE, stderr = TRUE, env = paste0("DYLD_LIBRARY_PATH=",sim_folder))
 # Above from CCC
 
-# Below from Quinn T. on glm_testcase
-system("./glm")
-#system("glm",ignore.stdout=TRUE)
+# Below from Quinn T. on glm_testcase - for Windows!
+#system("./glm")
 
 #sometimes, you'll get an error that says "Error in file, 'Time(Date)' is not first column!
 #in this case, open the input file in Excel, set the column in Custom ("YYYY-MM-DD") format, resave, and close the file
 nc_file <- file.path(sim_folder, 'output/output.nc') #defines the output.nc file 
 
 #reality check of temp heat map
-plot_temp(nc_file, col_lim = c(0,30))
+plot_var(nc_file,var_name='temp')
 
 #get water level
 water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
 
 # Read in and plot water level observations
-wlevel <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
+wlevel <- read_csv("./Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
 wlevel$Date <- as.POSIXct(strptime(wlevel$Date, "%m/%d/%Y", tz="EST"))
 wlevel <- wlevel %>% filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
 
