@@ -41,7 +41,7 @@ inUrl1  <- "https://pasta.lternet.edu/package/data/eml/edi/202/7/f5fa5de4b49bae8
 infile1 <- paste0(getwd(),"/inflow_for_EDI_2013_06Mar2020.csv")
 download.file(inUrl1,infile1,method="curl")
 
-temp <- read_csv("./inflow_for_EDI_2013_06Mar2020.csv")
+temp <- read_csv("./inputs/inflow_for_EDI_2013_06Mar2020.csv")
 temp$DateTime = as.POSIXct(strptime(temp$DateTime,"%Y-%m-%d", tz="EST"))
 temp <- temp %>% select(DateTime, WVWA_Temp_C) %>% 
   rename(time=DateTime, TEMP=WVWA_Temp_C) %>%
@@ -205,7 +205,7 @@ total_inflow <- total_inflow %>%
   mutate_if(is.numeric, round, 4) #round to 4 digits 
 
 #write file for inflow for the weir, with 2 pools of OC (DOC + DOCR)  
-write.csv(total_inflow, "BVR_inflow_2014_2019_20210223_allfractions_2poolsDOC_withch4_nldasInflow.csv", row.names = F)
+write.csv(total_inflow, "./inputs/BVR_inflow_2014_2019_20210223_allfractions_2poolsDOC_withch4_nldasInflow.csv", row.names = F)
 
 #copying dataframe in workspace to be used later
 alltdata = alldata
@@ -297,5 +297,5 @@ ggplot()+
   theme_classic(base_size=15)
 
 #write file
-write.csv(outflow, "BVR_spillway_outflow_2014_2019_20210223_nldasInflow.csv", row.names=F)
+write.csv(outflow, "./inputs/BVR_spillway_outflow_2014_2019_20210223_nldasInflow.csv", row.names=F)
   
