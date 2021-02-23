@@ -3,8 +3,10 @@
 # Updated for BVR GLM inflow files: A Hounshell, 18 Jun 2020
 # Updated 08 July 2020 per FCR inflow file: Added DONR and DOPR fractions for inflow prep
 # Updated 17 Sep 2020 to include updated inflow model using NLDAS data
+# Updated 23 Feb 2021 to include new inflow file (BVR_flow_calcs_new)
 
-setwd("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/inputs")
+wd <- getwd()
+setwd(wd)
 sim_folder <- getwd()
 
 #load packages
@@ -19,11 +21,13 @@ pacman::p_load(dplyr,zoo,EcoHydRology,rMR,tidyverse,lubridate)
 # First, read in inflow file generated from Thronthwaite Overland flow model + groundwater recharge
 # From HW: for entire watershed (?); units in m3/s
 # Updated inflow model using NLDAS precip and temp data: units in m3/d - need to convert to m3/s
-inflow <- read_csv("BVR_flow_calcs.csv")
+inflow <- read_csv("./inputs/BVR_flow_calcs_new.csv")
 inflow$time = as.POSIXct(strptime(inflow$time,"%Y-%m-%d", tz="EST"))
 inflow <- inflow[,-c(1)]
 names(inflow)[2] <- "FLOW"
 inflow$FLOW = inflow$FLOW/86400
+inflow <- inflow %>% 
+  filter(time >= "2014-01-01")
  
 #diagnostic plot
 plot(inflow$time, inflow$FLOW)
@@ -33,11 +37,11 @@ plot(inflow$time, inflow$FLOW)
 # going to assume temperature measured at FCR 100 is close to BVR inflow temp
 
 # Download FCR inflow data from EDI
-inUrl1  <- "https://pasta.lternet.edu/package/data/eml/edi/202/6/96bdffa73741ec6b43a98f2c5d15daeb" 
+inUrl1  <- "https://pasta.lternet.edu/package/data/eml/edi/202/7/f5fa5de4b49bae8373f6e7c1773b026e" 
 infile1 <- paste0(getwd(),"/inflow_for_EDI_2013_06Mar2020.csv")
 download.file(inUrl1,infile1,method="curl")
 
-temp <- read_csv("inflow_for_EDI_2013_06Mar2020.csv")
+temp <- read_csv("./inflow_for_EDI_2013_06Mar2020.csv")
 temp$DateTime = as.POSIXct(strptime(temp$DateTime,"%Y-%m-%d", tz="EST"))
 temp <- temp %>% select(DateTime, WVWA_Temp_C) %>% 
   rename(time=DateTime, TEMP=WVWA_Temp_C) %>%
@@ -62,7 +66,7 @@ inUrl1  <- "https://pasta.lternet.edu/package/data/eml/edi/199/6/2b3dc84ae6b12d1
 infile1 <- paste0(getwd(),"/chem.csv")
 download.file(inUrl1,infile1,method="curl")
 
-BVRchem <- read.csv("chem.csv", header=T) %>%
+BVRchem <- read.csv("./inputs/chem.csv", header=T) %>%
   select(Reservoir:DIC_mgL) %>%
   dplyr::filter(Reservoir=="BVR") %>%
   dplyr::filter(Site==100 | Site==200) %>%
@@ -121,7 +125,7 @@ bvr_nuts <- bvr_nuts %>%
   mutate(DIC_mgL = rnorm(2191,mean=mean(BVRchem$DIC_mgL,sd=sd(BVRchem$DIC_mgL))))
 
 #read in lab dataset of dissolved silica, measured by Jon in summer 2014 only
-silica <- read.csv("FCR2014_Chemistry.csv", header=T) %>%
+silica <- read.csv("./inputs/FCR2014_Chemistry.csv", header=T) %>%
   select(Date, Depth, DRSI_mgL) %>%
   mutate(Date = as.POSIXct(strptime(Date, "%Y-%m-%d", tz="EST"))) %>%
   dplyr::filter(Depth == 999) %>% #999 = weir inflow site
@@ -138,7 +142,7 @@ alldata<-merge(inflow, bvr_nuts, by="time", all.x=TRUE)
 #read in lab dataset of CH4 from 2015-2019
 # for BVR: Only have a handful of days w/ CH4 in inflows (BVR 100 and 200); aggregate all time points
 # and average CH4 - use average as CH4 input for the entier year
-ghg <- read.csv("BVR_GHG_Inflow_20200619.csv", header=T) %>%
+ghg <- read.csv("./inputs/BVR_GHG_Inflow_20200619.csv", header=T) %>%
   dplyr::filter(Reservoir == "BVR") %>%
   dplyr::filter(Depth_m == 100|Depth_m == 200) %>% #weir inflow
   select(DateTime, ch4_umolL) %>%
@@ -201,7 +205,7 @@ total_inflow <- total_inflow %>%
   mutate_if(is.numeric, round, 4) #round to 4 digits 
 
 #write file for inflow for the weir, with 2 pools of OC (DOC + DOCR)  
-write.csv(total_inflow, "BVR_inflow_2014_2019_20200917_allfractions_2poolsDOC_withch4_nldasInflow.csv", row.names = F)
+write.csv(total_inflow, "BVR_inflow_2014_2019_20210223_allfractions_2poolsDOC_withch4_nldasInflow.csv", row.names = F)
 
 #copying dataframe in workspace to be used later
 alltdata = alldata
@@ -256,7 +260,7 @@ write.csv(weir_inflow, "FCR_weir_inflow_2013_2019_20200607_allfractions_1poolDOC
 # Load in water level + volume data for BVR
 # Calculated using WVWA + Carey Lab BVR water level observations and joined DEM + 2018 Bathymetry survey
 # See: BVR_Volume script for Matlab
-vol <- read_csv("C:/Users/ahoun/OneDrive/Desktop/BVR-GLM/BVR-GLM/Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
+vol <- read_csv("./Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
 vol$Date <- as.POSIXct(strptime(vol$Date, "%m/%d/%Y", tz = "EST"))
 
 vol1 <- vol %>% filter(Date>=as.Date('2013-12-31')&Date<=as.Date('2019-12-30')) %>% select(Date,BVR_Vol_m3)
@@ -293,5 +297,5 @@ ggplot()+
   theme_classic(base_size=15)
 
 #write file
-write.csv(outflow, "BVR_spillway_outflow_2014_2019_20200917_nldasInflow.csv", row.names=F)
+write.csv(outflow, "BVR_spillway_outflow_2014_2019_20210223_nldasInflow.csv", row.names=F)
   
