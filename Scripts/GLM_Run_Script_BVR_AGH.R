@@ -19,14 +19,14 @@ sim_folder <- wd
 
 #look at glm and aed nml files
 nml_file <- paste0(sim_folder,"/glm3.nml")
-# aed_file <- paste0(sim_folder,"/aed2/aed2_20200612_2DOCpools.nml")
-# aed_phytos_file <- paste0(sim_folder,"/aed2/aed2_phyto_pars_ForQuinn_3groups_30Oct2019.nml")
+aed_file <- paste0(sim_folder,"/aed2/aed2_20210204_2DOCpools.nml")
+aed_phytos_file <- paste0(sim_folder,"/aed2/aed2_phyto_pars_30June2020.nml")
 nml <- read_nml(nml_file) 
-# aed <- read_nml(aed_file) #you may get a warning about an incomplete final line but it doesn't matter
-# aed_phytos <- read_nml(aed_phytos_file)
+aed <- read_nml(aed_file) #you may get a warning about an incomplete final line but it doesn't matter
+aed_phytos <- read_nml(aed_phytos_file)
 print(nml)
-# print(aed)
-# print(aed_phytos)
+print(aed)
+print(aed_phytos)
 
 #run the model!
 system2(paste0(sim_folder, "/", "glm"), stdout = TRUE, stderr = TRUE, env = paste0("DYLD_LIBRARY_PATH=",sim_folder))
@@ -41,6 +41,7 @@ nc_file <- file.path(sim_folder, 'output/output.nc') #defines the output.nc file
 
 #reality check of temp heat map
 plot_var(nc_file,var_name='temp')
+plot_var(nc_file,var_name = 'OXY_oxy')
 
 #get water level
 water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
@@ -179,7 +180,7 @@ depths<- c(0.1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 #plot_var_compare(nc_file,field_file,var_name = var, precision="days",col_lim = c(0,1000)) #compare obs vs modeled
 
 #get modeled oxygen concentrations for focal depths
-mod_oxy <- get_var(nc_file, "OXY_oxy", reference="surface", z_out=depths) #%>%
+mod_oxy <- get_var(nc_file, "OXY_oxy", reference="surface", z_out=depths) %>%
   pivot_longer(cols=starts_with("OXY_oxy_"), names_to="Depth", names_prefix="OXY_oxy_", values_to = "OXY_oxy") %>%
   mutate(DateTime = as.POSIXct(strptime(DateTime, "%Y-%m-%d", tz="EST"))) 
 

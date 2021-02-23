@@ -6,13 +6,21 @@
    max_layer_thick = 1.5
    non_avg = .true.
 /
+&wq_setup
+   wq_lib = 'aed'
+   wq_nml_file = 'aed2/aed2_20210204_2DOCpools.nml'
+   ode_method = 1
+   split_factor = 1
+   bioshade_feedback = .true.
+   repair_state = .true.
+/
 &light
    light_mode = 0
    n_bands = 4
    light_extc = 1, 0.5, 2, 4
    energy_frac = 0.51, 0.45, 0.035, 0.005
    Benthic_Imin = 10
-   Kw = 0.87
+   Kw = 0.15
 /
 &mixing
    coef_mix_conv = 0.2
