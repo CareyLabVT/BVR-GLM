@@ -182,7 +182,7 @@ run_glm <- function(os){
     file.copy('aed2/aed4.nml', 'aed2/aed2.nml', overwrite = TRUE)
     system("glm",ignore.stdout=TRUE)
   } else if (os == "Compiled"){
-    sim_folder = getwd() #BE SURE TO EDIT THIS!
+    sim_folder = "/Users/alexgh/Desktop/BVR-GLM" #BE SURE TO EDIT THIS!
     system2(paste0(sim_folder, "/", "glm"), stdout = TRUE, stderr = TRUE, env = paste0("DYLD_LIBRARY_PATH=",sim_folder))
   }
 }
@@ -907,7 +907,7 @@ it <- 1
   #end Robert's version of the glmOPT function
   
   #Run GLM
-  #run_glm(os)
+  run_glm(os)
   h <- paste(filename,', RMSE',
              round(get_rmse(temp_mods <- mod2obs(out, obs, reference = 'surface', var), 
                             obs),2),var_unit,'NSE',
