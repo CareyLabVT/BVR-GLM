@@ -11,9 +11,9 @@ coef_mix_hyp,0.2,0.8,0.5
 ce,5e-04,0.002,0.0013
 ch,5e-04,0.002,0.0013
 cd,5e-04,0.002,0.0013
-inflow_factor,0.8,1.2,1
 sed_temp_mean,3,20,11
 sed_temp_mean,3,20,17
 sed_temp_amplitude,2,12,6
 sed_temp_amplitude,2,12,6
+sed_temp_peak_doy,250,280,272
 sed_temp_peak_doy,250,280,272
