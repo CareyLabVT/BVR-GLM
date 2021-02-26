@@ -12,7 +12,7 @@ rm(list = ls()) #let's clean up that workspace!
 wd <- setwd("/Users/alexgh/Desktop/BVR-GLM")
 #setwd("C:/Users/ahoun/Desktop/BVR-GLM") # For AGH windows computer
 #setwd("./FCR_2013_2019GLMHistoricalRun_GLMv3beta") #if pulling from github, sets it to proper wd
-source('Scripts/functions-glm.R') #source the helper functions
+source('Scripts/20210225_functions-glm_hw.R') #source the helper functions
 read.packages() 
 
 # RUN GLM AND READ RESULTS  ---------------------------

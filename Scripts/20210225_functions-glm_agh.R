@@ -3,6 +3,7 @@
 #NOTE - search for "EDIT" in this file - you will need to edit multiple lines in this file to make 
 # specific for your analysis/calibration & validation period/dynamic library files on your machine
 #Last updated by CCC 3 June 2020
+# Updated by AGH 25 Feb 2021 - calibvalid throws error! Try with new functions-glm from FCR-GLM?
 
 read.packages <- function(){
   Packages <- c("dplyr", "ggplot2", "tidyverse", "cluster", "zoo", "gtools", 
@@ -37,6 +38,7 @@ get_glm_description <- function(iter, perm, id, description){
 }
 
 plot_contour <- function(mod_nc, reference = "surface", h, var, unit, tlevels){
+  
   ncin <- nc_open(mod_nc)
   watdep <- ncvar_get(ncin, "z")
   wattemp <- ncvar_get(ncin, var)
@@ -150,7 +152,7 @@ save_ncdf <- function(name, time, z, wtr, oxy){
   nc_close(ncout)
 }
 
-# tadgh's function
+# tadhg's function
 mod2obs <- function(mod_nc, obs, reference = 'surface', var){
   deps = unique(obs[,2])
   #tim = unique(obs[,1])
@@ -173,7 +175,7 @@ mod2obs <- function(mod_nc, obs, reference = 'surface', var){
 
 run_glm <- function(os){
   if (os == "Windows"){
-    system('run_glm3.bat',ignore.stdout=TRUE)
+    system("./glm")
   } else if (os == "Unix"){
     system("glm",ignore.stdout=TRUE)
   } else if (os == "Original"){
@@ -213,9 +215,6 @@ match.tstep1 <- function(df1,df2){
   df2$DateTime <- as.POSIXct(strptime(df2$DateTime, "%Y-%m-%d", tz="EST"))
   return(df2)
 }
-
-
-
 
 get_nse <- function(x, y){
   id1 <- !is.na(obs[,3]) 
@@ -559,10 +558,11 @@ glmFUNsa <- function(p){
   write_path <- nml_file
   write_nml(eg_nml, file = write_path)
   
-  run_glm(os) #changed from Unix
+  #run_glm("Compiled") #changed from Unix 
+  run_glm(os)
   
-  mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)
-  
+  suppressWarnings(mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)) #Supressed warnings
+
   fit = sum((mod[,3] - obs[,3])^2,na.rm = T)
 
   print(paste('SAE', round(fit,1)))
@@ -600,7 +600,7 @@ glmFUN <- function(p){
   write_nml(eg_nml, file = write_path)
   
   run_glm(os)
-  
+
   # uni.deps = unique(obs)
   # if(length(uni.deps) > 300){
   #   mod <- resample_to_field(out, 'temp.csv')
@@ -608,14 +608,11 @@ glmFUN <- function(p){
   mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)
   # }
   
-  # if(metric == 'RMSE'){
-  #   fit = rmse(mod[,3], obs[,3])
-  # }else if(metric == 'lnlikelihood'){
-  #   fit <- lnlike(mod[,3], obs[,3],sd = T)
-  # }
-  
-  
-  
+#  if(metric == 'RMSE'){
+#    fit = rmse(mod[,3], obs[,3])
+#  }else if(metric == 'lnlikelihood'){
+#    fit <- lnlike(mod[,3], obs[,3],sd = T)
+#  }
   
   #print(paste(metric, fit))
   return(mod[,3])
@@ -643,11 +640,20 @@ glmFUNrmse <- function(p){
   write_nml(eg_nml, file = write_path)
   
   run_glm(os)
+  #system("./glm")
   
-  mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)
-  
-  fit = rmse(mod[,3], obs[,3])
-  
+  # Check for waterlevel blowing up
+  wl <- glmtools::get_surface_height(out)
+  nas <- sum(is.na(wl$surface_height))
+  if(nas > 0) {
+    print("NA in water level. Returning 999")
+    fit <- 999
+  } else {
+    mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)
+    
+    fit = signif(rmse(mod[,3], obs[,3]), 5)
+  }
+
   #Create a data frame to output each calibration attempt
   dat = data.frame(matrix(NA, ncol = (length(pars)+2), nrow = 1, dimnames = list(c(1), c('DateTime', pars, calib.metric))))
   dat[1,] = c(format(Sys.time()),p,fit)
@@ -725,40 +731,49 @@ run_sensitivity <- function(var, max_r, x0, lb, ub, pars, obs, nml_file){
     theme_bw()
   ggsave(file=paste0('results/SA_plot_',var,'-clust.png'), p7, dpi = 300,width = 150,height = 150, units = 'mm') #saves g
   
-  cal_pars = calib[c(which(morris_res_clust$cluster == row(k_means$centers)[k_means$centers==max(k_means$centers)])),]
+  cal_pars = calib
+  #cal_pars = calib[c(which(morris_res_clust$cluster == row(k_means$centers)[k_means$centers==max(k_means$centers)])),]
   
   #Separate parameters to be calibrated and default parameters
-  cal_pars = calib[c(which(morris_norm$mean >= 0.1)),]
-  def_pars = calib[-c(which(morris_norm$mean >= 0.1)),]
+ # cal_pars = calib[c(which(morris_norm$mean >= 0.1)),]
+ # def_pars = calib[-c(which(morris_norm$mean >= 0.1)),]
   
-  if (any(cal_pars$par %in% pars[duplicated(pars)])) { #to deal with duplicated parameters
-    tt <- match(pars[duplicated(pars)],cal_pars$par,pars[duplicated(pars)])
-    tt <- tt[!is.na(tt)]
-    for (i in 1:length(tt)){
-      id <- cal_pars[tt,]$par
-      cal_pars <- cal_pars[-tt[i],]
-      tt2 <-  which(id == calib$par)
-      cal_pars<-rbind(cal_pars, calib[tt2,])
-    }
-  }
   
-  # eg_nml <- read_nml(nml_file = nml_file)
-  # for(i in 1:length(pars[!duplicated(pars)])){
-  #     if (any(pars[!duplicated(pars)][i] == pars[duplicated(pars)])){
-  #       eg_nml <- set_nml(eg_nml, pars[!duplicated(pars)][i],
-  #                         p[which(pars[!duplicated(pars)][i] == pars)])
-  #     } else {
-  #       eg_nml <- set_nml(eg_nml,pars[!duplicated(pars)][i],p[!duplicated(pars)][i])
-  #     }
-  #   }
+### Troubleshooting note: this is where it gets stuck! 
+# Warning message: In match(pars[duplicated(pars)], cal_pars$par, pars[duplicated(pars)]) :NAs introduced by coercion  
+# Seems to be picking up three sed_mean_temps but not enough cal_temp_amplitude
+   
+# if (any(cal_pars$par %in% pars[duplicated(pars)])) { #to deal with duplicated parameters
+#   tt <- match(pars[duplicated(pars)],cal_pars$par,pars[duplicated(pars)])
+#   suppressWarnings(tt <- match(pars[duplicated(pars)],cal_pars$par,pars[duplicated(pars)]))
+#  tt <- tt[!is.na(tt)]
+# for (i in 1:length(tt)){
+#    id <- cal_pars[tt,]$par
+#   cal_pars <- cal_pars[-tt[i],]
+#    tt2 <-  which(id == calib$par)
+#    cal_pars<-rbind(cal_pars, calib[tt2,])
+#  }
+#}
 
+# eg_nml <- read_nml(nml_file = nml_file)
+# for(i in 1:length(pars[!duplicated(pars)])){
+#    if (any(pars[!duplicated(pars)][i] == pars[duplicated(pars)])){
+#       eg_nml <- set_nml(eg_nml, pars[!duplicated(pars)][i],
+#                         p[which(pars[!duplicated(pars)][i] == pars)])
+#     } else {
+#       eg_nml <- set_nml(eg_nml,pars[!duplicated(pars)][i],p[!duplicated(pars)][i])
+#     }
+#   }
+ 
+ #set_nml, but ignoring the duplicated pars because this generates errors
+ #for(i in 1:nrow(cal_pars)){
+  # eg_nml <- set_nml(eg_nml,pars[i],p[i])
+# } 
     
   write.csv(cal_pars, paste0('calibration_file_',var,'.csv'), row.names = F, quote = F)
   
   return()
 }
-
-
 
 run_calibvalid <- function(var, var_unit, var_seq, cal_pars, pars, ub, lb, init.val, 
                            obs, method, calib.metric, os, target_fit, target_iter,nml_file, flag){
@@ -789,7 +804,7 @@ run_calibvalid <- function(var, var_unit, var_seq, cal_pars, pars, ub, lb, init.
       }
     }
   }
-  # 
+   
   # if (flag == 1){
   #   file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
   #   file.copy('aed2/aed4.nml', 'aed2/aed2.nml', overwrite = TRUE)
@@ -823,14 +838,15 @@ run_calibvalid <- function(var, var_unit, var_seq, cal_pars, pars, ub, lb, init.
   # write_nml(nml, file = nml_file)
   
   
-  #begin Robert's version of the glmOPT function
+  #begin Robert's version of the glmOPT function --> trying to comment this out to get rid of the
+  # Error in approx(x = elevs_re, y = temps_re, xout = elevs_out) : need at least two non-NA values to interpolate 
   glmOPT <- pureCMAES(init.val, glmFUNrmse, lower = rep(0,length(init.val)), 
                       upper = rep(10,length(init.val)), 
                       sigma = 0.5, 
                       stopfitness = target_fit, 
                       stopeval = target_iter)
   glmFUNrmse(glmOPT$xmin)
-  
+
   #read in calibration data
   calib <- read.csv(paste0('results/calib_results_',calib.metric,'_',var,'.csv'))
   eval(parse(text = paste0('best_par <- calib[which.min(calib$',calib.metric,'),]')))
@@ -840,44 +856,48 @@ run_calibvalid <- function(var, var_unit, var_seq, cal_pars, pars, ub, lb, init.
   
   #Input best parameter set
   nml <- read_nml(nml_file = nml_file)
-  check_duplicates <- c()
-  for (i in 2:(ncol(best_par)-2)){
-    string1 <- colnames(best_par)[i]
-    for (j in (i+1):(ncol(best_par)-1)){
-      string2 <- colnames(best_par)[j]
-      if (substr(string1,1,floor(nchar(string1)*9/10)) == substr(string2,1,floor(nchar(string1)*9/10))){
-        check_duplicates <- append(check_duplicates, i)
-        check_duplicates <- append(check_duplicates, j)
-      }
-    }
-  }
-  checked <- 2:(ncol(best_par)-1)
-  for (i in 1:length(check_duplicates)){
-    checked <- checked[!checked == check_duplicates[i]]
-  }
   
-  for(i in checked){
-    nml <- set_nml(nml,colnames(best_par)[i],best_par[1,i])
-  }
-  
-  check_duplicates <- matrix(check_duplicates,ncol=2, byrow = TRUE)
-  find_dupl_groups <- list()
-  it <- 1
-  for (ii in 1:nrow(check_duplicates)){
-    if (ii == 1){
-      find_dupl_groups[[it]] <- (check_duplicates[ii,])
-    } else {
-      if (ii > 1){
-        if (any(check_duplicates[ii,] %in% find_dupl_groups[[it]])){
-          place <- !(check_duplicates[ii,] %in% find_dupl_groups[[it]])
-          find_dupl_groups[[it]]<-append(find_dupl_groups[[it]], check_duplicates[ii, which(place == TRUE)])
-        } else {
-          it <- it+1
-          find_dupl_groups[[it]] <- (check_duplicates[ii,])
-        } 
-      }
-    } }
-  
+
+ check_duplicates <- c()
+for (i in 2:(ncol(best_par)-2)){
+   string1 <- colnames(best_par)[i]
+   for (j in (i+1):(ncol(best_par)-1)){
+     string2 <- colnames(best_par)[j]
+     if (substr(string1,1,floor(nchar(string1)*9/10)) == substr(string2,1,floor(nchar(string1)*9/10))){
+       check_duplicates <- append(check_duplicates, i)
+       check_duplicates <- append(check_duplicates, j)
+     }
+   }
+ }
+ checked <- 2:(ncol(best_par)-1)
+ for (i in 1:length(check_duplicates)){
+   checked <- checked[!checked == check_duplicates[i]]
+ }
+
+ for(i in checked){
+   nml <- set_nml(nml,colnames(best_par)[i],best_par[1,i])
+ }
+
+ check_duplicates <- matrix(check_duplicates,ncol=2, byrow = TRUE)
+ find_dupl_groups <- list()
+it <- 1
+ for (ii in 1:nrow(check_duplicates)){
+   if (ii == 1){
+     find_dupl_groups[[it]] <- (check_duplicates[ii,])
+   } else {
+     if (ii > 1){
+       if (any(check_duplicates[ii,] %in% find_dupl_groups[[it]])){
+         place <- !(check_duplicates[ii,] %in% find_dupl_groups[[it]])
+         find_dupl_groups[[it]]<-append(find_dupl_groups[[it]], check_duplicates[ii, which(place == TRUE)])
+       } else {
+         it <- it+1
+         find_dupl_groups[[it]] <- (check_duplicates[ii,])
+       } 
+     }
+   } }
+
+# ISSUE HERE! ERROR GENERATED!
+# What's the 3rd duplicate??
   for (i in 1:length(find_dupl_groups)){
     nml <- set_nml(nml,
                    gsub('[.]','%',colnames(best_par))[find_dupl_groups[[i]][1]],
@@ -899,12 +919,13 @@ run_calibvalid <- function(var, var_unit, var_seq, cal_pars, pars, ub, lb, init.
   dev.off()
   
   
-  validation.list <- list("start" = '2019-01-01 00:00:00',
+  validation.list <- list("start" = '2018-01-01 00:00:00',
                           "stop" = '2019-12-31 12:00:00') # EDITED THIS
   nml <- read_nml('glm3.nml')
   nml <- set_nml(nml, arg_list = validation.list)
   write_nml(nml, 'glm3.nml')
   run_glm(os)
+  #system("./glm")
   h <- paste(filename,', RMSE',
              round(get_rmse(temp_mods <- mod2obs(out, obs, reference = 'surface', var), 
                             obs),2),var_unit,'NSE',
@@ -923,6 +944,7 @@ run_calibvalid <- function(var, var_unit, var_seq, cal_pars, pars, ub, lb, init.
   nml <- set_nml(nml, arg_list = total.list)
   write_nml(nml, 'glm3.nml')
   run_glm(os)
+  #system("./glm")
   h <- paste(filename,', RMSE',
              round(get_rmse(temp_mods <- mod2obs(out, obs, reference = 'surface', var), 
                             obs),2),var_unit,'NSE',
@@ -934,9 +956,6 @@ run_calibvalid <- function(var, var_unit, var_seq, cal_pars, pars, ub, lb, init.
   
   g1 <- diag.plots(mod2obs(out, obs, reference = 'surface', var), obs)
   ggsave(file=paste0('results/mod_obs_',var,'totalperiod_',filename,'.png'), g1, dpi = 300,width = 384,height = 216, units = 'mm')
-  
-  
-  
   
   return()
 }
