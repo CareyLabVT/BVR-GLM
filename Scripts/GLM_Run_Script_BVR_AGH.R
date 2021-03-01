@@ -19,7 +19,7 @@ sim_folder <- wd
 
 #look at glm and aed nml files
 nml_file <- paste0(sim_folder,"/glm3.nml")
-aed_file <- paste0(sim_folder,"/aed2/aed2_20210204_2DOCpools.nml")
+aed_file <- paste0(sim_folder,"/aed2/aed2_bvr.nml")
 aed_phytos_file <- paste0(sim_folder,"/aed2/aed2_phyto_pars_30June2020.nml")
 nml <- read_nml(nml_file) 
 aed <- read_nml(aed_file) #you may get a warning about an incomplete final line but it doesn't matter
@@ -49,7 +49,8 @@ water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
 # Read in and plot water level observations
 wlevel <- read_csv("./Data_Output/09Apr20_BVR_WaterLevelDailyVol.csv")
 wlevel$Date <- as.POSIXct(strptime(wlevel$Date, "%m/%d/%Y", tz="EST"))
-wlevel <- wlevel %>% filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
+wlevel <- wlevel %>% 
+  dplyr::filter(Date>as.POSIXct("2014-01-01") & Date<as.POSIXct("2020-01-01"))
 
 plot(water_level$DateTime,water_level$surface_height)
 points(wlevel$Date, wlevel$BVR_WaterLevel_m, type="l",col="red")
@@ -210,16 +211,16 @@ m_oxygen <- oxygen$Modeled_OXY_oxy[oxygen$Depth>=1 & oxygen$Depth<=1] #1m depth
 o_oxygen <- oxygen$Observed_OXY_oxy[oxygen$Depth>=1 & oxygen$Depth<=1] 
 RMSE(m_oxygen,o_oxygen)
 
-m_oxygen <- oxygen$Modeled_OXY_oxy[oxygen$Depth>=9 & oxygen$Depth<=9] #9m depth
-o_oxygen <- oxygen$Observed_OXY_oxy[oxygen$Depth>=9 & oxygen$Depth<=9] 
+m_oxygen <- oxygen$Modeled_OXY_oxy[oxygen$Depth>=9 & oxygen$Depth<=11] #9m depth
+o_oxygen <- oxygen$Observed_OXY_oxy[oxygen$Depth>=9 & oxygen$Depth<=11] 
 RMSE(m_oxygen,o_oxygen)
 
 m_oxygen <- oxygen$Modeled_OXY_oxy[oxygen$Depth>=5 & oxygen$Depth<=5] #5 m depth
 o_oxygen <- oxygen$Observed_OXY_oxy[oxygen$Depth>=5 & oxygen$Depth<=5] 
 RMSE(m_oxygen,o_oxygen)
 
-m_oxygen <- oxygen$Modeled_OXY_oxy[oxygen$Depth>=0 & oxygen$Depth<=9.3] #all depths
-o_oxygen <- oxygen$Observed_OXY_oxy[oxygen$Depth>=0 & oxygen$Depth<=9.3] 
+m_oxygen <- oxygen$Modeled_OXY_oxy[oxygen$Depth>=0 & oxygen$Depth<=11] #all depths
+o_oxygen <- oxygen$Observed_OXY_oxy[oxygen$Depth>=0 & oxygen$Depth<=11] 
 RMSE(m_oxygen,o_oxygen)
 
 mod_oxy9 <- get_var(nc_file, "OXY_oxy", reference="surface", z_out=c(9.2)) 
