@@ -148,8 +148,8 @@ run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
 
 # 2) dissolved oxygen
-file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('aed2/aed4_20200701_2DOCpools.nml', 'aed2/aed2_20200701_2DOCpools.nml', overwrite = TRUE)
+file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
+file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_20210204_2DOCpools.nml', overwrite = TRUE)
 var = 'OXY_oxy'
 calib <- matrix(c('par', 'lb', 'ub', 'x0',
                   'Fsed_oxy', -2, -40, -21,
@@ -170,7 +170,7 @@ lb <- calib$lb
 ub <- calib$ub
 pars <- calib$par
 obs <- read_field_obs('field_data/field_BVR.csv', var)
-nml_file = 'aed2/aed2_20200612.nml'
+nml_file = 'aed2/aed2_20210204_2DOCpools.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
 # 3) dissolved inorganic carbon
@@ -558,8 +558,8 @@ NSE(water_level$surface_height,wlevel$BVR_WaterLevel_m)
 rmse(water_level$surface_height,wlevel$BVR_WaterLevel_m)
 
 # 2) dissolved oxygen
-file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('aed2/aed4_20200701_2DOCpools.nml', 'aed2/aed2_20200701_2DOCpools.nml', overwrite = TRUE)
+file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
+file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_20210204_2DOCpools.nml', overwrite = TRUE)
 var = 'OXY_oxy'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
@@ -568,17 +568,19 @@ pars <- cal_pars$par
 ub <- cal_pars$ub
 lb <- cal_pars$lb
 #Create initial files
-#init.val <- rep(5, nrow(cal_pars))
-init.val <- (c(4.1,-25,-8) - lb) *10 /(ub-lb) # Paul's values
-#obs <- read_field_obs('field_data/field_BVR.csv', var)
-obs <- read_field_obs('field_data/CleanedObsOxy_9m.csv',var)
+init.val <- rep(5, nrow(cal_pars))
+#init.val <- (c(4.1,-25,-8) - lb) *10 /(ub-lb) # Paul's values
+obs <- read_field_obs('field_data/field_BVR.csv', var)
 method = 'cmaes'
 calib.metric = 'RMSE'
 os = "Compiled" #Changed from Unix
 target_fit = -Inf#2.50 * 1000/32
 target_iter = 500#1000*length(init.val)^2
 #nml_file = 'aed2/aed2.nml'
-nml_file = 'aed2/aed2_20200701_2DOCpools.nml'
+nml_file = 'aed2/aed2_20210204_2DOCpools.nml'
+var_unit = "mmol/m3"
+var_seq = seq(0,600,50)
+flag = c()
 run_calibvalid(var, var_unit = 'mmol/m3', var_seq = seq(0,600,50), cal_pars, pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c())
 
