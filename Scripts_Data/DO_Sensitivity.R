@@ -66,3 +66,19 @@ ggplot(oxy_ch4,mapping=aes(x=OXY_oxy,y=CAR_ch4,color=as.factor(Depth)))+
 ggplot(oxy_ch4_depth,mapping=aes(x=OXY_oxy,y=CAR_ch4,color=as.factor(Depth)))+
   geom_point()+
   theme_classic()
+
+var="CAR_pCO2"
+obs_co2<-read.csv('field_data/field_gases.csv', header=TRUE) %>% #read in observed chemistry data
+  dplyr::mutate(DateTime = as.POSIXct(strptime(DateTime, "%Y-%m-%d", tz="EST"))) %>%
+  select(DateTime, Depth, var) %>%
+  group_by(DateTime, Depth) %>%
+  summarise(CAR_pCO2 = mean(CAR_pCO2)) %>%
+  na.omit() 
+
+oxy_co2 <- left_join(obs_co2,obs_oxy,by=c("DateTime","Depth"))
+oxy_co2_depth <- oxy_co2 %>% 
+  filter(Depth == "11")
+
+fit <- nls(CAR_pCO2 ~ SSasymp(OXY_oxy,yf,y0,log_alpha),data=oxy_co2)
+
+qplot(OXY_oxy, CAR_pCO2, data = augment(fit)) + geom_line(aes(y = .fitted))
