@@ -5,6 +5,7 @@
 #Modified by Ryan and then by CCC
 ### Last edit 08 Nov 2018
 ### Run on Windows computer for best results, does not seem to like Mac
+### Edited by AGH to download NLDAS data from 01 Jan 2020 to 31 Dec 2020
 ###########################################################  
 setwd("./NLDASData") #relative data path
 #install.packages("RCurl","lubridate","raster","ncdf4","rgdal","httr")
@@ -42,7 +43,7 @@ extent = c(-79.83906,  37.30272, -79.83601,  37.30934) #this is specifically FCR
 ###########################################################
 ### Set timeframe 
 ###########################################################  
-out = seq.POSIXt(as.POSIXct('2018-12-31 12:00',tz = 'GMT'),as.POSIXct('2020-01-01 12:00',tz='GMT'),by = 'hour') #Already done: '2014-12-10 00:00' to '2019-12-31 23:00' #NLDAS ready ~3 days before present
+out = seq.POSIXt(as.POSIXct('2019-12-31 12:00',tz = 'GMT'),as.POSIXct('2021-01-01 12:00',tz='GMT'),by = 'hour') #Already done: '2014-12-10 00:00' to '2019-12-31 23:00' #NLDAS ready ~3 days before present
 #for s&g we did an overlap of one hour as a reality check to make sure that they lined up- might be good practice in the future?
 vars = c('PEVAPsfc_110_SFC_acc1h', 'DLWRFsfc_110_SFC', 'DSWRFsfc_110_SFC', 'CAPE180_0mb_110_SPDY',
          'CONVfracsfc_110_SFC_acc1h', 'APCPsfc_110_SFC_acc1h', 'SPFH2m_110_HTGL', 

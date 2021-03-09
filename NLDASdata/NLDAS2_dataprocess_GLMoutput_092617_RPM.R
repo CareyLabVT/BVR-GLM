@@ -5,6 +5,8 @@
 ### Last updated from RPM and the NLDAS2 Downloading script ###
 ### DATE: 092617 ###
 
+### Updated by AGH - adjust from GMT to EST, 09 Mar 2021
+
 library(dplyr)
 
 #setwd
@@ -89,7 +91,20 @@ names(FCR_NLDAS_met)[6] <- "Wind"
 names(FCR_NLDAS_met)[7] <- "Rain"
 
 ### Write the FCR NLDAS data into a format for GLM
-write.table(FCR_NLDAS_met,"FCR_GLM_met_NLDAS2_JAN19_DEC19.csv", sep = ",", row.names = F) #be sure to update this with the date of the data you are pulling!
+write.table(FCR_NLDAS_met,"FCR_GLM_met_NLDAS2_JAN20_DEC20.csv", sep = ",", row.names = F) #be sure to update this with the date of the data you are pulling!
+
+## Adjusted to EST for GLM modeling
+FCR_NLDAS_met$dateTime <- as.POSIXct(FCR_NLDAS_met$dateTime, format='%Y-%m-%d %H:%M:%S', tz="GMT")
+FCR_NLDAS_met$dateTime_EST <- format(FCR_NLDAS_met$dateTime,tz="America/New_York")
+
+FCR_NLDAS_met_est <- FCR_NLDAS_met %>% 
+  select(-dateTime) %>% 
+  rename(dateTime = dateTime_EST)
+
+col_order <- c("dateTime","ShortWave","LongWave","AirTemp","RelHum","Wind","Rain")
+FCR_NLDAS_met_est <- FCR_NLDAS_met_est[, col_order]
+
+write.table(FCR_NLDAS_met_est,"FCR_GLM_met_NLDAS2_JAN20_DEC20_estAdj.csv", sep = ",", row.names = F)
 
 #Let's assume that you're now merging multiple files together: MERGING TIME!!!!
 
@@ -103,7 +118,7 @@ data1$WindSpeed<-data1$Wind #only do this if you have Wind Speed instead of Wind
 data1$dateTime<-NULL #get rid of these bad cols
 data1$Wind<-NULL #this one too
 
-data2<-read.csv("FCR_GLM_met_NLDAS2_Dec14_Dec18.csv", header=TRUE) #past accumulated file
+data2<-read.csv("FCR_GLM_met_NLDAS2_Dec14_Dec19.csv", header=TRUE) #past accumulated file
   
 newdata<-merge(data1,data2, all=TRUE) #merge them- go!
 
