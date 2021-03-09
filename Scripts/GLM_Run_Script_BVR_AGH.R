@@ -231,10 +231,10 @@ plot(mod_oxy9$DateTime, mod_oxy9$OXY_oxy_9.2, type="l")
 #######################################################
 #### dissolved inorganic carbon (DIC) data ###########
 var="CAR_dic"
-field_file <- file.path(sim_folder,'/field_data/field_chem.csv') 
+field_file <- file.path(sim_folder,'/field_data/field_chem_2DOCpools.csv') 
 #note: DIC is tricky because there are no observational data between 2013-2017, so doesn't work for normal calibration period
 
-obs<-read.csv('field_data/field_chem.csv', header=TRUE) %>% #read in observed chemistry data
+obs<-read.csv('field_data/field_chem_2DOCpools.csv', header=TRUE) %>% #read in observed chemistry data
   dplyr::mutate(DateTime = as.POSIXct(strptime(DateTime, "%Y-%m-%d", tz="EST"))) %>%
   select(DateTime, Depth, var) %>%
   group_by(DateTime, Depth) %>%
@@ -341,8 +341,8 @@ mod <- eval(parse(text=paste0("newdata$Modeled_",var)))[newdata$Depth>=5 & newda
 obs <- eval(parse(text=paste0("newdata$Observed_",var)))[newdata$Depth>=5 & newdata$Depth<=5] 
 RMSE(mod,obs)
 
-mod <- eval(parse(text=paste0("newdata$Modeled_",var)))[newdata$Depth>=0.1 & newdata$Depth<=9.3] 
-obs <- eval(parse(text=paste0("newdata$Observed_",var)))[newdata$Depth>=0.1 & newdata$Depth<=9.3] 
+mod <- eval(parse(text=paste0("newdata$Modeled_",var)))[newdata$Depth>=10 & newdata$Depth<=11] 
+obs <- eval(parse(text=paste0("newdata$Observed_",var)))[newdata$Depth>=10 & newdata$Depth<=11] 
 RMSE(mod,obs)
 
 

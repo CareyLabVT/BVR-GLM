@@ -653,7 +653,11 @@ glmFUNrmse <- function(p){
   #  
   #  fit = signif(rmse(mod[,3], obs[,3]), 5)
   #}
-
+  
+  mod <- mod2obs(mod_nc = out, obs = obs, reference = 'surface', var)
+  
+  fit = rmse(mod[,3], obs[,3])
+  
   #Create a data frame to output each calibration attempt
   dat = data.frame(matrix(NA, ncol = (length(pars)+2), nrow = 1, dimnames = list(c(1), c('DateTime', pars, calib.metric))))
   dat[1,] = c(format(Sys.time()),p,fit)

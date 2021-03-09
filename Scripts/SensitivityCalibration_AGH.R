@@ -502,6 +502,7 @@ run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 # 1) water temperature
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_20210204_2DOCpools.nml', overwrite = TRUE)
+file.copy('./aed2/aed4_phyto_pars_30June2020.nml', './aed2/aed2_phyto_pars_30June2020.nml', overwrite = TRUE) #FIX THIS
 var = 'temp'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
@@ -559,7 +560,8 @@ rmse(water_level$surface_height,wlevel$BVR_WaterLevel_m)
 
 # 2) dissolved oxygen
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_20210204_2DOCpools.nml', overwrite = TRUE)
+file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_bvr.nml', overwrite = TRUE)
+file.copy('./aed2/aed4_phyto_pars_30June2020.nml', './aed2/aed2_phyto_pars_30June2020.nml', overwrite = TRUE) #FIX THIS
 var = 'OXY_oxy'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
@@ -577,7 +579,7 @@ os = "Compiled" #Changed from Unix
 target_fit = -Inf#2.50 * 1000/32
 target_iter = 500#1000*length(init.val)^2
 #nml_file = 'aed2/aed2.nml'
-nml_file = 'aed2/aed2_20210204_2DOCpools.nml'
+nml_file = 'aed2/aed2_bvr.nml'
 var_unit = "mmol/m3"
 var_seq = seq(0,600,50)
 flag = c()
@@ -587,7 +589,7 @@ run_calibvalid(var, var_unit = 'mmol/m3', var_seq = seq(0,600,50), cal_pars, par
 
 # 3) dissolved inorganic carbon
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('aed2/aed4_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
+file.copy('aed2/aed2_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'CAR_dic'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
@@ -605,14 +607,14 @@ os = "Compiled"
 target_fit = -Inf#2.50 * 1000/32
 target_iter = 500#1000#1000*length(init.val)^2
 nml_file = 'aed2/aed2_bvr.nml'
+flag=c()
 run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,2000,250), pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c())
 
 
 # 3b) dissolved methane
-file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
-#file.copy('aed2/aed4.nml', 'aed2/aed2.nml', overwrite = TRUE)
-file.copy('aed2/aed4_20200701_2DOCpools.nml', 'aed2/aed2_20200701_2DOCpools.nml', overwrite = TRUE)
+file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
+file.copy('aed2/aed4_20210309_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'CAR_ch4'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
@@ -622,13 +624,13 @@ ub <- cal_pars$ub
 lb <- cal_pars$lb
 #Create initial files
 init.val <- (c(250, 150, 1) - lb) *10 /(ub-lb) # EDIT THESE
-obs <- read_field_obs('field_data/field_gases_hypo.csv', var)
+obs <- read_field_obs('field_data/field_gases.csv', var)
 method = 'cmaes'
 calib.metric = 'RMSE'
 os = "Compiled"
 target_fit = -Inf#2.50 * 1000/32
 target_iter = 500#1000#1000*length(init.val)^2
-nml_file = 'aed2/aed2_20200701_2DOCpools.nml'
+nml_file = 'aed2/aed2_bvr.nml'
 run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,500,25), pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c())
 
