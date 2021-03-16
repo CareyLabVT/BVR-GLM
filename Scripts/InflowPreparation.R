@@ -221,7 +221,6 @@ total_inflow <- total_inflow %>%
 write.csv(total_inflow, "./inputs/BVR_inflow_2014_2019_20210223_allfractions_2poolsDOC_withch4_nldasInflow.csv", row.names = F)
 
 ### Test land-use change scenarios: assume (NOT validated by literature :):
-#     20% increase in discharge
 #     10% increase in NH4
 #     10% increase in NO3
 #     10% increase in SRP
@@ -232,7 +231,6 @@ write.csv(total_inflow, "./inputs/BVR_inflow_2014_2019_20210223_allfractions_2po
 #     20% increase in DOP
 #     10% increase in rDOP
 total_inflow_landuse <- total_inflow %>% 
-  mutate(FLOW = FLOW + FLOW*0.20) %>% 
   mutate(NIT_amm = NIT_amm + NIT_amm*0.10) %>% 
   mutate(NIT_nit = NIT_nit + NIT_nit*0.10) %>% #as all NO2 is converted to NO3
   mutate(PHS_frp = PHS_frp + PHS_frp*0.10) %>% 
