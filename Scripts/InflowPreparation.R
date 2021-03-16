@@ -4,6 +4,7 @@
 # Updated 08 July 2020 per FCR inflow file: Added DONR and DOPR fractions for inflow prep
 # Updated 17 Sep 2020 to include updated inflow model using NLDAS data
 # Updated 23 Feb 2021 to include new inflow file (BVR_flow_calcs_new)
+# Updated 16 Mar 2021 to include a test land-use scenario
 
 wd <- getwd()
 setwd(wd)
@@ -11,12 +12,6 @@ sim_folder <- getwd()
 
 #load packages
 pacman::p_load(dplyr,zoo,EcoHydRology,rMR,tidyverse,lubridate)
-#library(dplyr)
-#library(zoo)
-#library(EcoHydRology)
-#library(rMR)
-#library(tidyverse)
-#library(lubridate)
 
 # First, read in inflow file generated from Thronthwaite Overland flow model + groundwater recharge
 # From HW: for entire watershed (?); units in m3/s
@@ -124,6 +119,24 @@ bvr_nuts <- bvr_nuts %>%
   mutate(DOC_mgL = rnorm(2191,mean=mean(BVRchem$DOC_mgL,sd=sd(BVRchem$DOC_mgL)))) %>% 
   mutate(DIC_mgL = rnorm(2191,mean=mean(BVRchem$DIC_mgL,sd=sd(BVRchem$DIC_mgL))))
 
+# Make sure values are not negative!
+bvr_nuts <- bvr_nuts %>% 
+  mutate(TN_ugL = ifelse(TN_ugL<=0.00, 0.00, TN_ugL)) %>% 
+  mutate(TP_ugL = ifelse(TP_ugL<=0.00, 0.00, TP_ugL)) %>% 
+  mutate(NH4_ugL = ifelse(NH4_ugL<=0.00, 0.00, NH4_ugL)) %>% 
+  mutate(NO3NO2_ugL = ifelse(NO3NO2_ugL<=0.00, 0.00, NO3NO2_ugL)) %>% 
+  mutate(SRP_ugL = ifelse(SRP_ugL<=0.00, 0.00, SRP_ugL)) %>%
+  mutate(DOC_mgL = ifelse(DOC_mgL<=0.00, 0.00, DOC_mgL)) %>% 
+  mutate(DIC_mgL = ifelse(DIC_mgL<=0.00, 0.00, DIC_mgL))
+
+hist(bvr_nuts$TN_ugL)
+hist(bvr_nuts$TP_ugL)
+hist(bvr_nuts$NH4_ugL)
+hist(bvr_nuts$NO3NO2_ugL)
+hist(bvr_nuts$SRP_ugL)
+hist(bvr_nuts$DOC_mgL)
+hist(bvr_nuts$DIC_mgL)
+
 #read in lab dataset of dissolved silica, measured by Jon in summer 2014 only
 silica <- read.csv("./inputs/FCR2014_Chemistry.csv", header=T) %>%
   select(Date, Depth, DRSI_mgL) %>%
@@ -206,6 +219,65 @@ total_inflow <- total_inflow %>%
 
 #write file for inflow for the weir, with 2 pools of OC (DOC + DOCR)  
 write.csv(total_inflow, "./inputs/BVR_inflow_2014_2019_20210223_allfractions_2poolsDOC_withch4_nldasInflow.csv", row.names = F)
+
+### Test land-use change scenarios: assume (NOT validated by literature :):
+#     20% increase in discharge
+#     10% increase in NH4
+#     10% increase in NO3
+#     10% increase in SRP
+#     20% increase in labile DOC
+#     10% increase in rDOC
+#     20% increase in DON
+#     10% increase in rDON
+#     20% increase in DOP
+#     10% increase in rDOP
+total_inflow_landuse <- total_inflow %>% 
+  mutate(FLOW = FLOW + FLOW*0.20) %>% 
+  mutate(NIT_amm = NIT_amm + NIT_amm*0.10) %>% 
+  mutate(NIT_nit = NIT_nit + NIT_nit*0.10) %>% #as all NO2 is converted to NO3
+  mutate(PHS_frp = PHS_frp + PHS_frp*0.10) %>% 
+  mutate(OGM_doc = OGM_doc + OGM_doc*0.20) %>% #assuming 10% of total DOC is in labile DOC pool (Wetzel page 753)
+  mutate(OGM_docr = OGM_docr + OGM_docr*0.10) %>% #assuming 90% of total DOC is in labile DOC pool
+#  mutate(TN_ugL = TN_ugL*1000*0.001*(1/14)) %>% 
+#  mutate(TP_ugL = TP_ugL*1000*0.001*(1/30.97)) %>% 
+#  mutate(OGM_poc = 0.1*(OGM_doc+OGM_docr)) %>% #assuming that 10% of DOC is POC (Wetzel page 755)
+  mutate(OGM_don = OGM_don + OGM_don*0.20) %>% #DON is ~5x greater than PON (Wetzel page 220)
+  mutate(OGM_donr = OGM_donr + OGM_donr*0.10) %>% #to keep mass balance with DOC, DONr is 90% of total DON
+#  mutate(OGM_pon = (1/6)*(TN_ugL-(NIT_amm+NIT_nit))) %>%
+  mutate(OGM_dop = OGM_dop + OGM_dop*0.20) %>% #Wetzel page 241, 70% of total organic P = particulate organic; 30% = dissolved organic P
+  mutate(OGM_dopr = OGM_dopr + OGM_dopr*0.10) #Wetzel page 241, 70% of total organic P = particulate organic; 30% = dissolved organic P
+#  mutate(OGM_pop = 0.7*(TP_ugL-PHS_frp)) %>% 
+  #mutate(PHS_frp_ads = PHS_frp) %>% #Following Farrell et al. 2020 EcolMod
+#  mutate(CAR_dic = DIC_mgL*1000*(1/52.515)) #Long-term avg pH of FCR is 6.5, at which point CO2/HCO3 is about 50-50
+  
+#clean it up and get vars in order
+total_inflow_landuse <- total_inflow_landuse %>%
+  select(time, FLOW, TEMP, SALT, OXY_oxy, NIT_amm:CAR_dic, CAR_ch4) %>% 
+  mutate(SIL_rsi = rep(median(silica$DRSI_mgL),length(total_inflow_landuse$time))) %>%
+  mutate(SIL_rsi = SIL_rsi*1000*(1/60.08)) %>% #setting the Silica concentration to the median 2014 inflow concentration for consistency
+  mutate_if(is.numeric, round, 4) #round to 4 digits 
+
+# Check to make sure it worked?
+# Flow
+ggplot()+
+  geom_line(total_inflow_landuse,mapping=aes(time,FLOW,color="LandUse"))+
+  geom_line(total_inflow,mapping=aes(time,FLOW,color="Inflow"))+
+  theme_classic(base_size=15)
+
+# NIT
+ggplot()+
+  geom_line(total_inflow_landuse,mapping=aes(time,NIT_nit,color="LandUse"))+
+  geom_line(total_inflow,mapping=aes(time,NIT_nit,color="Inflow"))+
+  theme_classic(base_size=15)
+
+# DOC
+ggplot()+
+  geom_line(total_inflow_landuse,mapping=aes(time,OGM_doc,color="LandUse"))+
+  geom_line(total_inflow,mapping=aes(time,OGM_doc,color="Inflow"))+
+  theme_classic(base_size=15)
+
+#write file for inflow for the weir, with 2 pools of OC (DOC + DOCR)  
+write.csv(total_inflow_landuse, "./inputs/BVR_inflow_2014_2019_20210316_allfractions_2poolsDOC_withch4_nldasInflow_landuse.csv", row.names = F)
 
 #copying dataframe in workspace to be used later
 alltdata = alldata
