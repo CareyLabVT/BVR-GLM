@@ -42,6 +42,7 @@ nc_file <- file.path(sim_folder, 'output/output.nc') #defines the output.nc file
 #reality check of temp heat map
 plot_var(nc_file,var_name='temp')
 plot_var(nc_file,var_name = 'OXY_oxy')
+plot_var(nc_file,var_name = "CAR_dic")
 
 #get water level
 water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)

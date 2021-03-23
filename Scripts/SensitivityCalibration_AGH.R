@@ -174,13 +174,15 @@ nml_file = './aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
 # 3) dissolved inorganic carbon
-file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_bvr.nml', overwrite = TRUE)
+file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
+file.copy('aed2/aed2_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
+# NOTE! For now - manually changed alk mode = 3 (2021-03-23)
+# Prior calibrations (2021-03-22) used alk mode = 1 w/ an RMSE of 804 (BAD!)
 var = 'CAR_dic'
 calib <- matrix(c('par', 'lb', 'ub', 'x0',
-                  'Fsed_dic', 0.001, 100, 4,
-                  'Ksed_dic', 0.001, 100, 30,
-                  'theta_sed_dic', 0.9, 1.2, 1.08), nrow = 4, ncol = 4, byrow = TRUE)
+                  'Fsed_dic', 0.001, 300, 4,
+                  'Ksed_dic', 0.001, 200, 30,
+                  'theta_sed_dic', 0.9, 1.2, 1.04), nrow = 4, ncol = 4, byrow = TRUE)
 write.table(calib, file = paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), row.names = FALSE, 
             col.names = FALSE, sep = ',',
             quote = FALSE)
@@ -590,6 +592,8 @@ run_calibvalid(var, var_unit = 'mmol/m3', var_seq = seq(0,600,50), cal_pars, par
 # 3) dissolved inorganic carbon
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('aed2/aed2_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
+# NOTE! For now - manually changed alk mode = 3 (2021-03-23)
+# Prior calibrations (2021-03-22) used alk mode = 1 w/ an RMSE of 804 (BAD!)
 var = 'CAR_dic'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
