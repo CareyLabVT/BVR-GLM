@@ -160,3 +160,17 @@ super_final_2$pH <- as.numeric(super_final_2$pH)
 ggplot(super_final_2,mapping=aes(x=Date,y=pH,group=as.factor(new_depth),color=new_depth))+
   geom_line()+
   theme_classic(base_size=15)
+
+median(super_final_2$pH)
+max(super_final_2$pH)
+min(super_final_2$pH)
+
+# Plot DIC concentrations
+ggplot(dic,mapping=aes(x=DateTime,y=CAR_dic,color=as.factor(Depth)))+
+  geom_line()+
+  geom_point()+
+  theme_classic(base_size=15)
+
+median(dic$CAR_dic)
+min(dic$CAR_dic)
+max(dic$CAR_dic)
