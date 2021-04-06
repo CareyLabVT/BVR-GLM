@@ -82,9 +82,18 @@ ggplot()+
   geom_line(data,mapping=aes(x=DateTime,y=alk_5,color="alk_5"))+
   theme_classic(base_size=10)
 
+# Calculate TCO2 following Carbon module (line 516)
+a    =  8.24493*10^-1 - 4.0899*10^-3*data$temp + 7.6438*10^-5*data$temp**2 - 8.2467*10^-7*data$temp**3 + 5.3875*10^-9*data$temp**4
+b    = -5.72466*10^-3 + 1.0227*10^-4*data$temp - 1.6546*10^-6*data$temp**2
+c    =  4.8314*10^-4
+
+data <- data %>% 
+  mutate(dcf  = (999.842594 + 6.793952*10^-2*temp - 9.095290*10^-3*temp**2 + 1.001685*10^-4*temp**3
+          - 1.120083*10^-6*temp**4 + 6.536332*10^-9*temp**5+a*sal+b*sal**1.5+c*sal**2)/(1.0*10^3))
+
 
 ### Create our own Alk model! ###
-# [Alk] = DICpKa1 (assume that at neutral pH = 5-8)
+# [Alk] = DIC*pKa1 (assume that at neutral pH = 5-8)
 alpha = ((10^-5/10^-6.3)+1+(10^-10.3/10^-5))^-1
 alpha = ((10^-6/10^-6.3)+1+(10^-10.3/10^-6))^-1
 alpha = ((10^-7/10^-6.3)+1+(10^-10.3/10^-7))^-1
@@ -153,10 +162,35 @@ detach(package:plyr)#to prevent issues with dplyr vs plyr not playing well toget
 
 #now need to clean up the data frame and make all factors numeric
 super_final_2 <- as.data.frame(super_final) %>% 
-  select(-c(1,Depth_m))
+  select(-c(1,Depth_m)) %>% 
+  rename(DateTime = Date, Depth = new_depth) %>% 
+  mutate(DateTime = as.POSIXct(DateTime))
 
 super_final_2$pH <- as.numeric(super_final_2$pH)
+super_final_2$Depth <- as.numeric(super_final_2$Depth)
 
+# Combine DIC and pH data
+data_2 <- full_join(data,super_final_2,by=c("DateTime","Depth"))
+
+# Calculate alk ('alk 6') based on DIC and pH
+### Create our own Alk model! ###
+data_2 <- data_2 %>% 
+  mutate(alk_6 = (((10^-pH/10^-6.3)+1+(10^-10.3/10^-pH))^-1)*CAR_dic)
+
+# Plot Alk_4 ('best' fitting existing alk model) and Alk_6 through time
+ggplot()+
+  geom_point(data_2,mapping=aes(x=DateTime,y=alk_4,color="Alk 4"))+
+  geom_line(data_2,mapping=aes(x=DateTime,y=alk_4,color="Alk 4"))+
+  geom_point(data_2,mapping=aes(x=DateTime,y=alk_6,color="Alk 6"))+
+  geom_line(data_2,mapping=aes(x=DateTime,y=alk_6,color="Alk 6"))+
+  xlim(as.POSIXct("2018-01-01"),as.POSIXct("2019-12-31"))+
+  theme_classic(base_size = 15)
+
+median(data_2$alk_6,na.rm=TRUE)
+max(data_2$alk_6,na.rm=TRUE)
+min(data_2$alk_6,na.rm=TRUE)
+
+# Plot long term pH
 ggplot(super_final_2,mapping=aes(x=Date,y=pH,group=as.factor(new_depth),color=new_depth))+
   geom_line()+
   theme_classic(base_size=15)
@@ -174,3 +208,15 @@ ggplot(dic,mapping=aes(x=DateTime,y=CAR_dic,color=as.factor(Depth)))+
 median(dic$CAR_dic)
 min(dic$CAR_dic)
 max(dic$CAR_dic)
+
+### Load in pCO2 data and try to calculate DIC from pCO2 and pH -- use this (plus the DIC data) to calibrate
+### alkalinity mode = 4
+gases <- read_csv("./field_data/field_gases.csv") %>% 
+  mutate(DateTime = as.POSIXct(strptime(DateTime,"%Y-%m-%d")))
+
+gases_2 <- full_join(gases,super_final_2,by=c("DateTime","Depth"))
+
+gases_2 <- gases_2 %>% 
+  arrange(DateTime,Depth)
+
+         
