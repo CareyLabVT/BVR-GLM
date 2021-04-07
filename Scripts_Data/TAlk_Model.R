@@ -196,6 +196,7 @@ ggplot(super_final_2,mapping=aes(x=Date,y=pH,group=as.factor(new_depth),color=ne
   theme_classic(base_size=15)
 
 median(super_final_2$pH)
+mean(super_final_2$pH)
 max(super_final_2$pH)
 min(super_final_2$pH)
 
@@ -206,6 +207,7 @@ ggplot(dic,mapping=aes(x=DateTime,y=CAR_dic,color=as.factor(Depth)))+
   theme_classic(base_size=15)
 
 median(dic$CAR_dic)
+mean(dic$CAR_dic)
 min(dic$CAR_dic)
 max(dic$CAR_dic)
 
