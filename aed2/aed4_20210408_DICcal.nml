@@ -203,15 +203,15 @@
 !-------------------------------------------------------------------------------
 &aed_carbon
    !-- DIC and pH --
-   dic_initial = 91 !1600 for Mendota; Bobbie found TIC long-term average to be 4 mg/L or 91 mmol/3
-   Fsed_dic = 0.001!10.84803103!3.890111!4 !7 !10 Sunapee, 100 Mendota, 4 manual; Ari 2.4; range = 0.34-3.8 Ari thesis
-   Ksed_dic = 53.44356346!30! 40 ! 20.0, 30 in manual
-   theta_sed_dic = 1.08!1.139730834!1.068687272!1.0129880 !1.08
+   dic_initial = 63!Long-term median BVR !91 FCR !1600 for Mendota; Bobbie found TIC long-term average to be 4 mg/L or 91 mmol/3
+   Fsed_dic = 61.9409490777337!w/ alk_mode=4 !0.001 FCR!10.84803103!3.890111!4 !7 !10 Sunapee, 100 Mendota, 4 manual; Ari 2.4; range = 0.34-3.8 Ari thesis
+   Ksed_dic = 178.674413536624!w/ alk_mode = 4!53.44356346 FCR!30! 40 ! 20.0, 30 in manual
+   theta_sed_dic = 1.1873702341961!w/ alk_mode=4!1.08 FCR!1.139730834!1.068687272!1.0129880 !1.08
 !  Fsed_dic_variable='SDF_Fsed_dic'
-   pH_initial = 6.2 !6.2 !both 8.4 for Mendota and Sunapee
+   pH_initial = 6.9 !Long-term median BVR !6.2 FCR !6.2 !both 8.4 for Mendota and Sunapee
    atm_co2 = 400e-6
    co2_model = 1
-   alk_mode = 1
+   alk_mode = 4
    ionic = 0.1 ! 0.1 for Sunapee, 0.1 for Mendota
    co2_piston_model = 1
    !-- CH4 --

@@ -43,7 +43,80 @@ nc_file <- file.path(sim_folder, 'output/output.nc') #defines the output.nc file
 plot_var(nc_file,var_name='temp')
 plot_var(nc_file,var_name = 'OXY_oxy')
 plot_var(nc_file,var_name = "CAR_dic")
+plot_var(nc_file,var_name = "CAR_pH")
+plot_var(nc_file,var_name = "salt")
+plot_var(nc_file,var_name = "CAR_pCO2")
+plot_var(nc_file,var_name = "CAR_ch4")
 
+#### Issues w/ DIC calibration - suspect alkalinity mode is wonky ####
+# Check the various alkalinity modes by calculating 'alkalinity' using DIC
+# and salinity following lines 441 in the Carbon module
+
+#Checking alkalinity models based on DIC and salt
+#Import modeled data for DIC and salt
+var = "CAR_dic"
+dic <- get_var(nc_file, var, reference="surface", z_out=depths) %>%
+  pivot_longer(cols=starts_with(paste0(var,"_")), names_to="Depth", names_prefix=paste0(var,"_"), values_to = var) %>%
+  mutate(DateTime = as.POSIXct(strptime(DateTime, "%Y-%m-%d", tz="EST"))) %>%
+  mutate(Depth = as.numeric(Depth)) %>%
+  na.omit()
+
+var = "salt"
+sal <- get_var(nc_file, var, reference="surface", z_out=depths) %>%
+  pivot_longer(cols=starts_with(paste0(var,"_")), names_to="Depth", names_prefix=paste0(var,"_"), values_to = var) %>%
+  mutate(DateTime = as.POSIXct(strptime(DateTime, "%Y-%m-%d", tz="EST"))) %>%
+  mutate(Depth = as.numeric(Depth)) %>%
+  na.omit()
+
+#alk_mode = 1 (Carbon model, lines 411)
+dic <- dic %>% 
+  mutate(alk_1 = 1627.4 + 22.176*sal$salt)
+
+# alk_mode = 2
+p00  =       1063
+p10  =      1.751
+p01  =   -0.05369
+p20  =     0.2266
+p11  =  -0.001252
+p02  =  0.0002546
+
+dic <- dic %>% 
+  mutate(alk_2 = p00 + p10*sal$salt + p01*dic$CAR_dic + p20*sal$salt**2 + p11*dic$CAR_dic*sal$salt + p02*dic$CAR_dic**2)
+
+# alk_mode = 3
+p00 =      -258.8
+p10 =       34.59
+p01 =      0.9923
+p20 =      0.8186
+p11 =    -0.03101
+p02 =   0.0001045
+
+dic <- dic %>% 
+  mutate(alk_3 = p00 + p10*sal$salt + p01*dic$CAR_dic + p20*sal$salt**2 + p11*dic$CAR_dic*sal$salt + p02*dic$CAR_dic**2)
+
+# alk_mode = 4
+p00 =      -47.51
+p10 =      -17.21
+p01 =        1.32
+p20 =      0.1439
+p11 =     0.01224
+p02 =  -0.0002055
+
+dic <- dic %>% 
+  mutate(alk_4 = p00 + p10*sal$salt + p01*dic$CAR_dic + p20*sal$salt**2 + p11*dic$CAR_dic*sal$salt + p02*dic$CAR_dic**2)
+
+# alk_mode 5
+p00 =       157.7
+p10 =       4.298
+p01 =      0.6448
+p20 =      0.2107
+p11 =   -0.002072
+p02 =   0.0001239
+
+dic <- dic %>% 
+  mutate(alk_5 = p00 + p10*sal$salt + p01*dic$CAR_dic + p20*sal$salt**2 + p11*dic$CAR_dic*sal$salt + p02*dic$CAR_dic**2)
+
+### Look at water level changes
 #get water level
 water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
 

@@ -178,7 +178,7 @@ file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('aed2/aed2_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 # NOTE! For now - manually changed alk mode = 3 (2021-03-23)
 # Prior calibrations (2021-03-22) used alk mode = 1 w/ an RMSE of 804 (BAD!)
-var = 'CAR_dic'
+var = 'CAR_pCO2'
 calib <- matrix(c('par', 'lb', 'ub', 'x0',
                   'Fsed_dic', 0.001, 300, 4,
                   'Ksed_dic', 0.001, 200, 30,
@@ -192,8 +192,8 @@ x0 <- calib$x0
 lb <- calib$lb
 ub <- calib$ub
 pars <- calib$par
-obs <- read_field_obs('field_data/field_chem_2DOCpools.csv', var)
-obs <- completeFun(obs, 'CAR_dic')
+obs <- read_field_obs('field_data/field_gases.csv', var)
+obs <- completeFun(obs, 'CAR_pCO2')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
@@ -594,6 +594,14 @@ file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('aed2/aed2_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 # NOTE! For now - manually changed alk mode = 3 (2021-03-23)
 # Prior calibrations (2021-03-22) used alk mode = 1 w/ an RMSE of 804 (BAD!)
+# Model 3 calibration: RMSE = 32.33; Fsed = 39.997; Ksed = 84.8284; Theta = 1.1816
+# Now try Model 4!
+# Model 4 calibration: RMSE = 32.26; Fsed = 61.94; Ksed = 178.67; Theta = 1.187
+# Does okay 2017 and onwards, but high DOC pre-2017 = not great
+# Try Model 5? Just curious to see
+# NOW: try calibrating to pCO2 instead of DIC
+# Use Model 4 (for now - seemed to do the best -ish; most reasonable alk values)
+# Updated intial condision using long-term DIC and pH median (63 mmol/m3; 6.9 pH)
 var = 'CAR_dic'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
@@ -618,7 +626,7 @@ run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,2000,250), p
 
 # 3b) dissolved methane
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('aed2/aed4_20210309_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
+file.copy('aed2/aed4_20210408_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'CAR_ch4'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
