@@ -21,9 +21,15 @@ dic <- dic[!is.na(dic$CAR_dic),]
 
 data <- left_join(dic,temp,by=c("DateTime","Depth"))
 
-# Basically assume salnity = 0
+# Basically assume salinity = 0
 data <- data %>% 
   mutate(sal = sample(0:0.1))
+
+# Plot DIC through time
+ggplot(data,mapping=aes(x=DateTime,y=CAR_dic,color=as.factor(Depth)))+
+  geom_line()+
+  geom_point()+
+  theme_classic(base_size=15)
 
 # Calculate TAlk using each model
 # Model 1
@@ -168,6 +174,17 @@ super_final_2 <- as.data.frame(super_final) %>%
 
 super_final_2$pH <- as.numeric(super_final_2$pH)
 super_final_2$Depth <- as.numeric(super_final_2$Depth)
+
+# Plot pH
+ggplot(super_final_2,mapping=aes(x=DateTime,y=pH,color=as.factor(Depth)))+
+  geom_line()+
+  geom_point()+
+  theme_classic(base_size=15)
+
+# Select winter months (12, 01, 02)
+ctd_winter <- super_final_2 %>% 
+  mutate(month=month(DateTime)) %>% 
+  filter(month %in% c(01,02,12))
 
 # Combine DIC and pH data
 data_2 <- full_join(data,super_final_2,by=c("DateTime","Depth"))
