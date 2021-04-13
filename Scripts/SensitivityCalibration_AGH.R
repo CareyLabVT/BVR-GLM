@@ -178,10 +178,11 @@ file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('aed2/aed2_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 # NOTE! For now - manually changed alk mode = 3 (2021-03-23)
 # Prior calibrations (2021-03-22) used alk mode = 1 w/ an RMSE of 804 (BAD!)
-var = 'CAR_pCO2'
+# Updated 12 Apr 2021: Alk_mode = 4; initial conditions updated
+var = 'CAR_dic'
 calib <- matrix(c('par', 'lb', 'ub', 'x0',
-                  'Fsed_dic', 0.001, 300, 4,
-                  'Ksed_dic', 0.001, 200, 30,
+                  'Fsed_dic', 0.001, 100, 4,
+                  'Ksed_dic', 0.001, 100, 30,
                   'theta_sed_dic', 0.9, 1.2, 1.04), nrow = 4, ncol = 4, byrow = TRUE)
 write.table(calib, file = paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), row.names = FALSE, 
             col.names = FALSE, sep = ',',
@@ -192,8 +193,8 @@ x0 <- calib$x0
 lb <- calib$lb
 ub <- calib$ub
 pars <- calib$par
-obs <- read_field_obs('field_data/field_gases.csv', var)
-obs <- completeFun(obs, 'CAR_pCO2')
+obs <- read_field_obs('field_data/field_chem_2DOCpools.csv', var)
+obs <- completeFun(obs, 'CAR_dic')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
@@ -602,6 +603,7 @@ file.copy('aed2/aed2_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 # NOW: try calibrating to pCO2 instead of DIC
 # Use Model 4 (for now - seemed to do the best -ish; most reasonable alk values)
 # Updated intial condision using long-term DIC and pH median (63 mmol/m3; 6.9 pH)
+# Re-did following senstivity analysis re-run on 12 Apr 2021
 var = 'CAR_dic'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
@@ -622,6 +624,32 @@ nml_file = 'aed2/aed2_bvr.nml'
 flag=c()
 run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,2000,250), pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c())
+
+
+### Try calibrating to pCO2? - using calibrations from DIC as a starting point
+# It's okay - DIC is likely the best...
+#file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
+#file.copy('aed2/aed4_20210408_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
+#var = 'CAR_pCO2'
+#calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
+#cal_pars = calib
+#Reload ub, lb for calibration
+#pars <- cal_pars$par
+#ub <- cal_pars$ub
+#lb <- cal_pars$lb
+#Create initial files
+#init.val <- (c(1, 50, 1.08) - lb) *10 /(ub-lb) # Paul's values
+#obs <- read_field_obs('field_data/field_gases.csv', var)
+#obs <- completeFun(obs, 'CAR_pCO2')
+#method = 'cmaes'
+#calib.metric = 'RMSE'
+#os = "Compiled"
+#target_fit = -Inf#2.50 * 1000/32
+#target_iter = 500#1000#1000*length(init.val)^2
+#nml_file = 'aed2/aed2_bvr.nml'
+#flag=c()
+#run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,2000,250), pars, ub, lb, init.val, obs, method, 
+#               calib.metric, os, target_fit, target_iter, nml_file, flag = c())
 
 
 # 3b) dissolved methane

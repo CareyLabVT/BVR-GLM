@@ -211,7 +211,7 @@
    pH_initial = 6.9 !Long-term median BVR !6.2 FCR !both 8.4 for Mendota and Sunapee
    atm_co2 = 400e-6
    co2_model = 1
-   alk_mode = 1
+   alk_mode = 4
    ionic = 0.1 ! 0.1 for Sunapee, 0.1 for Mendota
    co2_piston_model = 1
    !-- CH4 --
