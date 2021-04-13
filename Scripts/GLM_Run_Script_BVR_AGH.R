@@ -348,19 +348,19 @@ newdata <-newdata[complete.cases(newdata),]
 
 mod <- eval(parse(text=paste0("newdata$Modeled_",var)))[newdata$Depth>=0.1 & newdata$Depth<=0.1] #depths from 6-9m
 obs <- newdata$Observed_CAR_dic[newdata$Depth>=0.1 & newdata$Depth<=0.1] #depths from 6-9m
-RMSE(m_DIC,o_DIC)
+RMSE(mod,obs)
 
-m_DIC <- DIC$Modeled_CAR_dic[DIC$Depth>=9 & DIC$Depth<=9] #depths from 6-9m
-o_DIC <- DIC$Observed_CAR_dic[DIC$Depth>=9 & DIC$Depth<=9] #depths from 6-9m
-RMSE(m_DIC,o_DIC)
+mod <- eval(parse(text=paste0("newdata$Modeled_",var)))[newdata$Depth>=9.0 & newdata$Depth<=9.0] #depths from 6-9m
+obs <- newdata$Observed_CAR_dic[newdata$Depth>=9.0 & newdata$Depth<=9.0] #depths from 6-9m
+RMSE(mod,obs)
 
-m_DIC <- DIC$Modeled_CAR_dic[DIC$Depth>=5 & DIC$Depth<=5] #depths from 6-9m
-o_DIC <- DIC$Observed_CAR_dic[DIC$Depth>=5 & DIC$Depth<=5] #depths from 6-9m
-RMSE(m_DIC,o_DIC)
+mod <- eval(parse(text=paste0("newdata$Modeled_",var)))[newdata$Depth>=6.0 & newdata$Depth<=6.0] #depths from 6-9m
+obs <- newdata$Observed_CAR_dic[newdata$Depth>=6.0 & newdata$Depth<=6.0] #depths from 6-9m
+RMSE(mod,obs)
 
-m_DIC <- DIC$Modeled_CAR_dic[DIC$Depth>=0 & DIC$Depth<=9.3] #depths from 6-9m
-o_DIC <- DIC$Observed_CAR_dic[DIC$Depth>=0 & DIC$Depth<=9.3] #depths from 6-9m
-RMSE(m_DIC,o_DIC)
+mod <- eval(parse(text=paste0("newdata$Modeled_",var)))[newdata$Depth>=0.1 & newdata$Depth<=10.0] #depths from 6-9m
+obs <- newdata$Observed_CAR_dic[newdata$Depth>=0.1 & newdata$Depth<=10.0] #depths from 6-9m
+RMSE(mod,obs)
 
 
 #######################################################

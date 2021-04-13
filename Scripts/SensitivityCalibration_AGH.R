@@ -629,7 +629,7 @@ run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,2000,250), p
 ### Try calibrating to pCO2? - using calibrations from DIC as a starting point
 # It's okay - DIC is likely the best...
 #file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
-#file.copy('aed2/aed4_20210408_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
+#file.copy('aed2/aed4_20210324_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 #var = 'CAR_pCO2'
 #calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 #cal_pars = calib
@@ -654,7 +654,7 @@ run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,2000,250), p
 
 # 3b) dissolved methane
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('aed2/aed4_20210408_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
+file.copy('aed2/aed4_20210413_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'CAR_ch4'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
