@@ -235,6 +235,11 @@ max(dic$CAR_dic)
 gases <- read_csv("./field_data/field_gases.csv") %>% 
   mutate(DateTime = as.POSIXct(strptime(DateTime,"%Y-%m-%d")))
 
+gases_winter <- gases %>% 
+  mutate(month=month(DateTime)) %>% 
+  filter(month %in% c(01,02,03,12))
+  
+
 gases_2 <- full_join(gases,super_final_2,by=c("DateTime","Depth"))
 
 gases_2 <- gases_2 %>% 
