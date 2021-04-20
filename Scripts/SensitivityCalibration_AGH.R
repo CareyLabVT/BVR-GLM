@@ -200,8 +200,10 @@ run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
 
 # 3b) dissolved methane
-file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_bvr.nml', overwrite = TRUE)
+# Updated the parameter ranges - calibration maxed out at values (RMSE = 117)
+# Following DIC calibration; 19 Apr 2021
+file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
+file.copy('aed2/aed4_20210413_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'CAR_ch4'
 calib <- matrix(c('par', 'lb', 'ub', 'x0',
                   'Rch4ox', 0.0001, 5, 1,
@@ -209,7 +211,7 @@ calib <- matrix(c('par', 'lb', 'ub', 'x0',
                   'vTch4ox', 0.9, 1.2, 1.08,
                   'Fsed_ch4', 0.001, 300, 30,
                   'Ksed_ch4', 0.001, 100, 30,
-                  'theta_sed_ch4', 1, 1.15, 1.08), nrow = 7, ncol = 4, byrow = TRUE)#BE SURE TO EDIT ROW N!
+                  'theta_sed_ch4', 0.85, 1.15, 1.08), nrow = 7, ncol = 4, byrow = TRUE)#BE SURE TO EDIT ROW N!
 write.table(calib, file = paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), row.names = FALSE, 
             col.names = FALSE, sep = ',',
             quote = FALSE)
@@ -624,7 +626,7 @@ nml_file = 'aed2/aed2_bvr.nml'
 flag=c()
 run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,2000,250), pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c())
-
+# 14 Apr 2021: Moving forward with calibrations based on what we have! Potential to come back to DIC later if other modules are funky....!
 
 ### Try calibrating to pCO2? - using calibrations from DIC as a starting point
 # It's okay - DIC is likely the best...
@@ -676,9 +678,8 @@ run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,500,25), par
 
 
 # 4) silica
-file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
-#file.copy('aed2/aed4.nml', 'aed2/aed2.nml', overwrite = TRUE)
-file.copy('aed2/aed4_20200701_2DOCpools.nml', 'aed2/aed2_20200701_2DOCpools.nml', overwrite = TRUE)
+file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
+file.copy('aed2/aed4_20210419_Ch4cal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'SIL_rsi'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
