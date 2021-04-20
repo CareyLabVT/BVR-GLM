@@ -80,14 +80,6 @@ p02 =   0.0001239
 data <- data %>% 
   mutate(alk_5 = p00 + p10*sal + p01*CAR_dic + p20*sal**2 + p11*CAR_dic*sal + p02*CAR_dic**2)
 
-ggplot()+
-  geom_line(data,mapping=aes(x=DateTime,y=alk_1,color="alk_1"))+
-  geom_line(data,mapping=aes(x=DateTime,y=alk_2,color="alk_2"))+
-  geom_line(data,mapping=aes(x=DateTime,y=alk_3,color="alk_3"))+
-  geom_line(data,mapping=aes(x=DateTime,y=alk_4,color="alk_4"))+
-  geom_line(data,mapping=aes(x=DateTime,y=alk_5,color="alk_5"))+
-  theme_classic(base_size=10)
-
 # Calculate TCO2 following Carbon module (line 516)
 a    =  8.24493*10^-1 - 4.0899*10^-3*data$temp + 7.6438*10^-5*data$temp**2 - 8.2467*10^-7*data$temp**3 + 5.3875*10^-9*data$temp**4
 b    = -5.72466*10^-3 + 1.0227*10^-4*data$temp - 1.6546*10^-6*data$temp**2
@@ -106,6 +98,16 @@ alpha = ((10^-7/10^-6.3)+1+(10^-10.3/10^-7))^-1
 
 data <- data %>% 
   mutate(alk_6 = 0.333854989*CAR_dic)
+
+
+ggplot()+
+  geom_line(data,mapping=aes(x=DateTime,y=alk_1,color="alk_1"))+
+  geom_line(data,mapping=aes(x=DateTime,y=alk_2,color="alk_2"))+
+  geom_line(data,mapping=aes(x=DateTime,y=alk_3,color="alk_3"))+
+  geom_line(data,mapping=aes(x=DateTime,y=alk_4,color="alk_4"))+
+  geom_line(data,mapping=aes(x=DateTime,y=alk_5,color="alk_5"))+
+  geom_line(data,mapping=aes(x=DateTime,y=alk_6,color="alk_6"))+
+  theme_classic(base_size=10)
 
 # Plot pH through time for BVR (b/c I'm curious)
 # Load in data
@@ -232,6 +234,11 @@ max(dic$CAR_dic)
 ### alkalinity mode = 4
 gases <- read_csv("./field_data/field_gases.csv") %>% 
   mutate(DateTime = as.POSIXct(strptime(DateTime,"%Y-%m-%d")))
+
+gases_winter <- gases %>% 
+  mutate(month=month(DateTime)) %>% 
+  filter(month %in% c(01,02,03,12))
+  
 
 gases_2 <- full_join(gases,super_final_2,by=c("DateTime","Depth"))
 
