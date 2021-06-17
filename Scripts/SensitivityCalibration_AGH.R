@@ -4,11 +4,15 @@
 #modified for BVR 8 Aug 2020 HLW
 # Updated by AGH to work with Windows : )
 # Updated by AGH to work with Mac : )
+# Most updated script for running Sensitivity Analysis
+# 17 June 2021, AGH
 
 pacman::p_load(GLMr,glmtools,tidyverse,lubridate,ncdf4,hydroGOF)
 
 rm(list = ls()) #let's clean up that workspace!
 
+# Set working director: note this will need to change (even if you use
+# CCCs Mac!)
 wd <- setwd("/Users/alexgh/Desktop/BVR-GLM")
 #setwd("C:/Users/ahoun/Desktop/BVR-GLM") # For AGH windows computer
 #setwd("./FCR_2013_2019GLMHistoricalRun_GLMv3beta") #if pulling from github, sets it to proper wd
@@ -23,16 +27,20 @@ os = "Compiled"
 
 sim_folder<-getwd()
 
+# Old versions of running GLM
 #run_glm("Original") #pulling from Cayelan's version
 #system("./glm") # Running GLM from windows
+
+# Start by just making sure you can run GLM!
 system2(paste0(sim_folder, "/", "glm"), stdout = TRUE, stderr = TRUE, env = paste0("DYLD_LIBRARY_PATH=",sim_folder))
 
-# Check temperature and DO
+# Check temperature and DO - just make sure nothing is super wonky : )
 nc_file <- file.path(sim_folder, 'output/output.nc') #defines the output.nc file 
 plot_var(nc_file,var_name='temp')
 plot_var(nc_file,var_name = 'OXY_oxy')
 
-# Check water level?
+# Check water level - with BVR, this is mainly to make sure nothing funky is
+# happening with water level (and that it goes down in 2014 when BVR was lowered!)
 par(mfrow=c(1,1))
 #get water level
 water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
@@ -46,7 +54,7 @@ wlevel <- wlevel %>%
 plot(water_level$DateTime,water_level$surface_height)
 points(wlevel$Date, wlevel$BVR_WaterLevel_m, type="l",col="red")
 
-# Calculate NSE (good call, Heather!)
+# Calculate NSE for water level (good call, Heather!)
 NSE(water_level$surface_height,wlevel$BVR_WaterLevel_m)
 
 # GET FIELD DATA FOR CALIBRATION AND VALIDATION  ---------------------------
@@ -101,10 +109,16 @@ gases$DateTime <-as.POSIXct(strptime(gases$DateTime, "%Y-%m-%d", tz="EST"))
 #nml_file = 'glm3.nml'
 #run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
+# NOTE: The senstivity calibration is (largely) set-up to run using the 
+# default values for FCR for each parameter. HOWEVER, I did go back and re-do
+# some of the sensitivity analysis with calibrated parameters; these instances
+# are noted below. - AGH, 17 June 2021
 
 # 1) water temperature, following ISIMIP approach
 #first, copy & paste your glm3.nml and aed2.nml within their respective directories
 # and rename as glm4.nml and aed4.nml; these 4.nml versions are going to be rewritten
+# This is currently set up for the ORIGINAL files using FCR calibrated defaults:
+# The original GLM file for BVR is 'glm4.nml' and for AED is 'aed4_20210204_2DOCpools.nml'
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'temp'
@@ -146,7 +160,7 @@ obs <- read_field_obs('field_data/CleanedObsTemp.csv', var)
 nml_file = 'glm3.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
-
+# Again, set-up to run sensitivity analysis with the original, default FCR values
 # 2) dissolved oxygen
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_bvr.nml', overwrite = TRUE)
@@ -173,12 +187,21 @@ obs <- read_field_obs('field_data/field_BVR.csv', var)
 nml_file = './aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
+# This is where I shook things up : )
+# Re-did sensitivity analysis following Temp and DO calibration!
+# The glm following temp calibration can be found: 20210225_tempcal_glm3.nml
+# The aed following DO calibration can be found: aed2_20210301_DOcal.nml
+
 # 3) dissolved inorganic carbon
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('aed2/aed2_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 # NOTE! For now - manually changed alk mode = 3 (2021-03-23)
 # Prior calibrations (2021-03-22) used alk mode = 1 w/ an RMSE of 804 (BAD!)
 # Updated 12 Apr 2021: Alk_mode = 4; initial conditions updated
+# Note: DIC is a TERRIBLE calibration - it's the best it's going to be with how 
+# Alk/pH/DIC are set-up in GLM (it's set-up for estuarine systems, which BVR is not)
+# We are now using Alk_mode = 4 (*best* represents freshwater systems like BVR) -
+# this is reflected in the AED files!
 var = 'CAR_dic'
 calib <- matrix(c('par', 'lb', 'ub', 'x0',
                   'Fsed_dic', 0.001, 100, 4,
@@ -198,10 +221,13 @@ obs <- completeFun(obs, 'CAR_dic')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
+# Also re-did methane sensitivity analysis following DIC calibration
+# AED following DIC calibration = aed4_20210431_DICcal.nml
 
 # 3b) dissolved methane
 # Updated the parameter ranges - calibration maxed out at values (RMSE = 117)
 # Following DIC calibration; 19 Apr 2021
+# Updated to include two Fsed_ch4; 20 Apr 2021
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('aed2/aed4_20210413_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'CAR_ch4'
@@ -209,9 +235,10 @@ calib <- matrix(c('par', 'lb', 'ub', 'x0',
                   'Rch4ox', 0.0001, 5, 1,
                   'Kch4ox', 0.0001, 5, 0.5,
                   'vTch4ox', 0.9, 1.2, 1.08,
+                  'Fsed_ch4', 0.001, 20, 30,
                   'Fsed_ch4', 0.001, 300, 30,
                   'Ksed_ch4', 0.001, 100, 30,
-                  'theta_sed_ch4', 0.85, 1.15, 1.08), nrow = 7, ncol = 4, byrow = TRUE)#BE SURE TO EDIT ROW N!
+                  'theta_sed_ch4', 0.85, 1.2, 1.08), nrow = 8, ncol = 4, byrow = TRUE)#BE SURE TO EDIT ROW N!
 write.table(calib, file = paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), row.names = FALSE, 
             col.names = FALSE, sep = ',',
             quote = FALSE)
@@ -226,14 +253,16 @@ obs <- completeFun(obs, 'CAR_ch4')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
+# Again, re-did Si sensitivity analysis following CH4 calibration
+# AED file can be found: aed4_20210517_CH4cal.nml
 
 # 4) silica
-file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('./aed2/aed4_20210204_2DOCpools.nml', './aed2/aed2_bvr.nml', overwrite = TRUE)
+file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
+file.copy('aed2/aed4_20210517_CH4cal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'SIL_rsi'
 calib <- matrix(c('par', 'lb', 'ub', 'x0',
-                  'Fsed_rsi', 0.1, 100, 25,
-                  'Ksed_rsi', 0.1, 300, 50,
+                  'Fsed_rsi', 0.01, 100, 25,
+                  'Ksed_rsi', 0.01, 300, 50,
                   'theta_sed_rsi', 1, 1.15, 1.08), nrow = 4, ncol = 4, byrow = TRUE)
 write.table(calib, file = paste0('sensitivity/sample_sensitivity_config_',var,'.csv'), row.names = FALSE, 
             col.names = FALSE, sep = ',',
@@ -248,6 +277,9 @@ obs <- read_field_obs('field_data/field_silica.csv', var)
 obs <- completeFun(obs, 'SIL_rsi')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
+
+# And that's as far as I've gotten! For the sensitivity analysis here, I used
+# the INITIAL GLM and AED files with default FCR values
 
 # 5a) ammonium
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
@@ -279,6 +311,8 @@ obs <- read_field_obs('field_data/field_chem_2DOCpools.csv', var)
 obs <- completeFun(obs, 'NIT_amm')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
+
+# Again, this sensitivity analysis has been completed with the default FCR values
 
 # 5b) nitrate
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
@@ -314,6 +348,7 @@ obs <- completeFun(obs, 'NIT_nit')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
+# Same as above, sensitivity analysis conducted w/ default FCR values
 
 # 6) phosphorus
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
@@ -337,6 +372,7 @@ obs <- completeFun(obs, 'PHS_frp')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
+# Default FCR values used for sensitivity analysis
 
 # 7a) dissolved organic carbon labile
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
@@ -368,6 +404,7 @@ obs <- completeFun(obs, 'OGM_doc')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
+# Still using default FCR values : )
 
 # 7b) dissolved organic carbon recalcitrant
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
@@ -399,6 +436,8 @@ obs <- completeFun(obs, 'OGM_docr')
 nml_file = 'aed2/aed2_bvr.nml'
 run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
+# And here, too! Using default FCR values for GLM, AED, and Phytos for sensitivity
+# analysis
 
 # 8) chlorophyll a
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)
@@ -449,6 +488,7 @@ run_sensitivity(var, max_r, x0, lb, ub, pars, obs, nml_file)
 
 
 # START CALIBRATION  ---------------------------
+# With our sensitivity analysis complete, we now calibrate!
 
 ## NOTE: Again, decided against water level calibration, but will keep code here
 ## Stats for temp_cal ONLY: NSE = 0.82; RMSE = 0.28
@@ -533,6 +573,7 @@ var_seq = seq(-5,35,1)
 flag = c()
 run_calibvalid(var, var_unit = 'degreesC', var_seq = seq(-5,35,1), cal_pars, pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c()) #var_seq is contour color plot range
+# Saved temp calibrated GLM file as: 20210225_tempcal_glm3.nml
 
 #to visualize how params can converge
 par(mfrow=c(3,4))
@@ -542,7 +583,7 @@ for(i in 1:length(init.val)){
   plot(temp,data[,i+1],type="l",xlab="Iteration", ylab=(colnames(data[i+1])))
 }
 
-# Check water level?
+# Check water level - with BVR, just making sure things didn't go haywire!
 par(mfrow=c(1,1))
 
 nc_file <- file.path(sim_folder, 'output/output.nc') #defines the output.nc file 
@@ -590,7 +631,7 @@ var_seq = seq(0,600,50)
 flag = c()
 run_calibvalid(var, var_unit = 'mmol/m3', var_seq = seq(0,600,50), cal_pars, pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c())
-
+# Save calibrated DO AED file as: aed2_20210301_DOcal.nml
 
 # 3) dissolved inorganic carbon
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
@@ -606,6 +647,7 @@ file.copy('aed2/aed2_20210301_DOcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 # Use Model 4 (for now - seemed to do the best -ish; most reasonable alk values)
 # Updated intial condision using long-term DIC and pH median (63 mmol/m3; 6.9 pH)
 # Re-did following senstivity analysis re-run on 12 Apr 2021
+# AGAIN, DIC is messy : ( But is the best I could do based on AED Alk models!
 var = 'CAR_dic'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
@@ -627,9 +669,13 @@ flag=c()
 run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,2000,250), pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c())
 # 14 Apr 2021: Moving forward with calibrations based on what we have! Potential to come back to DIC later if other modules are funky....!
+# Saved calibrated AED file as: aed4_20210413_DICcal.nml
 
 ### Try calibrating to pCO2? - using calibrations from DIC as a starting point
 # It's okay - DIC is likely the best...
+# Essentially, thought about trying to calibrate parameters to CO2 instead of DIC,
+# but decided against it. Leaving here for now, in case!
+
 #file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
 #file.copy('aed2/aed4_20210324_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 #var = 'CAR_pCO2'
@@ -655,6 +701,7 @@ run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,2000,250), p
 
 
 # 3b) dissolved methane
+# 20 Apr 21 - not totally happy with the Ch4 cal-need to think about this!
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
 file.copy('aed2/aed4_20210413_DICcal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'CAR_ch4'
@@ -665,7 +712,9 @@ pars <- cal_pars$par
 ub <- cal_pars$ub
 lb <- cal_pars$lb
 #Create initial files
-init.val <- (c(250, 150, 1) - lb) *10 /(ub-lb) # EDIT THESE
+#init.val <- (c(0.1, 0.2, 1.2,15,232.6331575,3.437,1.2)) # Set to FCR values
+#init.val <- (c(5,3.22207676666631,1.2,20,0.001,90.9636692134804,1.15)) # Set to 'best' calibration on 13 May 21; RMSE = 69.2
+init.val <- (c(2.32575664385824,1.91550357302636,0.933143654436953,16.9021630964968,24.2366116379325,58.0794006714731,1.08762979109973)) # Set to 'best' calibration on 17 May 21; RMSE = 61.78
 obs <- read_field_obs('field_data/field_gases.csv', var)
 method = 'cmaes'
 calib.metric = 'RMSE'
@@ -675,11 +724,17 @@ target_iter = 500#1000#1000*length(init.val)^2
 nml_file = 'aed2/aed2_bvr.nml'
 run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,500,25), pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c())
+# Not the best calibration, but follows expected patterns...
+# Calibrated AED file saved as: aed4_20210517_CH4cal
 
+# And, that's as far as I got : ( Kept trying to calibrate Si, but it kept
+# getting stuck at the lower+higher end of calibration values
+# Likely going to be hard to calibrate given few observed Si values...the FCR
+# calibration acutally isn't too bad, so may suggest using that?
 
 # 4) silica
 file.copy('20210225_tempcal_glm3.nml', 'glm3.nml', overwrite = TRUE)
-file.copy('aed2/aed4_20210419_Ch4cal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
+file.copy('aed2/aed4_20210517_CH4cal.nml', 'aed2/aed2_bvr.nml', overwrite = TRUE)
 var = 'SIL_rsi'
 calib <- read.csv(paste0('calibration_file_',var,'.csv'), stringsAsFactors = F)
 cal_pars = calib
@@ -689,16 +744,18 @@ ub <- cal_pars$ub
 lb <- cal_pars$lb
 #Create initial files
 init.val <- (c(5, 50) - lb) *10 /(ub-lb) # EDIT THESE
+#init.val <- c(1.001875773, 1.002457037, 1.03741305118548) # calibrated values from FCR
 obs <- read_field_obs('field_data/field_silica.csv', var)
 method = 'cmaes'
 calib.metric = 'RMSE'
 os = "Compiled"
 target_fit = -Inf#2.50 * 1000/32
 target_iter = 300#1000*length(init.val)^2
-nml_file = 'aed2/aed2_20200701_2DOCpools.nml'
+nml_file = 'aed2/aed2_bvr.nml'
 run_calibvalid(var, cal_pars, var_unit = 'mmol/m3', var_seq = seq(0,1000,50), pars, ub, lb, init.val, obs, method, 
                calib.metric, os, target_fit, target_iter, nml_file, flag = c())
 
+# Sorry...you're on your own from here : )
 
 # 5a) ammonium
 file.copy('glm4.nml', 'glm3.nml', overwrite = TRUE)

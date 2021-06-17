@@ -4,6 +4,7 @@
 # last updated 2 June 2020
 # Updated for BVR: A Hounshell, 29 Jun 2020
 # Updated with NLDAS inflow model: A Hounshell, 17 Sep 2020
+# Added in some notes: 17 June 2021, AGH
 
 # Load packages, set sim folder, load nml file ####
 pacman::p_load(GLMr,glmtools,tidyverse,lubridate,ncdf4,hydroGOF)
@@ -13,11 +14,15 @@ pacman::p_load(GLMr,glmtools,tidyverse,lubridate,ncdf4,hydroGOF)
 #library(lubridate)
 #library(ncdf4)
 
+# Will need to set your own WD (even with using CCC's Mac!)
 wd <- setwd("/Users/alexgh/Desktop/BVR-GLM")
 #setwd("../BVR-GLM") #if pulling from github, sets it to proper wd, which should be "/FCR_2013_2019GLMHistoricalRun_GLMv3beta"
 sim_folder <- wd
 
 #look at glm and aed nml files
+# This is using default files that have likely been updated with the Sensitivity
+# Calibration script (i.e., you can use the SensitivityCalibration script to 
+# overwrite these with the most updated calibration file)
 nml_file <- paste0(sim_folder,"/glm3.nml")
 aed_file <- paste0(sim_folder,"/aed2/aed2_bvr.nml")
 aed_phytos_file <- paste0(sim_folder,"/aed2/aed2_phyto_pars_30June2020.nml")
@@ -49,6 +54,8 @@ plot_var(nc_file,var_name = "CAR_pCO2")
 plot_var(nc_file,var_name = "CAR_ch4")
 
 #### Issues w/ DIC calibration - suspect alkalinity mode is wonky ####
+# NOTE: This is where AGH went down a deep dive for Alkalinity - you can ignore
+# all of this (unless you too, would like to go donw an Alk deep dive!)
 # Check the various alkalinity modes by calculating 'alkalinity' using DIC
 # and salinity following lines 441 in the Carbon module
 
@@ -68,6 +75,9 @@ sal <- get_var(nc_file, var, reference="surface", z_out=depths) %>%
   mutate(Depth = as.numeric(Depth)) %>%
   na.omit()
 
+### This is if you really, really want to go into an Alk deep dive....
+# Specifically looking at the different alkalinity modes in AED that you can use
+# It's very messy (both here and in GLM : )
 #alk_mode = 1 (Carbon model, lines 411)
 dic <- dic %>% 
   mutate(alk_1 = 1627.4 + 22.176*sal$salt)
@@ -117,6 +127,8 @@ dic <- dic %>%
   mutate(alk_5 = p00 + p10*sal$salt + p01*dic$CAR_dic + p20*sal$salt**2 + p11*dic$CAR_dic*sal$salt + p02*dic$CAR_dic**2)
 
 ### Look at water level changes
+# This is really important for BVR! Usually good to check, but I think we're 
+# doing okay??
 #get water level
 water_level<-get_surface_height(nc_file, ice.rm = TRUE, snow.rm = TRUE)
 
@@ -132,7 +144,8 @@ points(wlevel$Date, wlevel$BVR_WaterLevel_m, type="l",col="red")
 # Calculate NSE (good call, Heather!)
 NSE(water_level$surface_height,wlevel$BVR_WaterLevel_m)
 
-#get WRT
+#get WRT - this was mainly a deep dive for BVR, given crazy water level changes
+# I think this was pretty set for now, but can check!
 volume<-get_var(nc_file, "Tot_V", reference="surface") #in m3
 evap<-get_var(nc_file, "evap", reference="surface")
 precip<-get_var(nc_file, "precip", reference="surface")
@@ -164,10 +177,13 @@ median(wrt$wrt)
 mean(wrt$wrt)
 range(wrt$wrt)
 
-#get ice
+#get ice - haha, what ice?! JK - haven't really done this
 ice<-get_var(nc_file,"hwice")
 iceblue<-get_var(nc_file,"hice")
 plot(ice$DateTime,rowSums(cbind(ice$hwice,iceblue$hice)))
+
+# The rest is mainly for checking various parameters - this was helpful when
+# checking things!
 
 #read in cleaned CTD temp file with long-term obs at focal depths
 obstemp<-read_csv('field_data/CleanedObsTemp.csv') %>%
